@@ -1,27 +1,6 @@
-# Dependencies
 node_modules/
-.pnpm-store/
-
-# Build output (electron-builder writes the portable exe and win-unpacked here)
 dist/
-out/
-*.exe
-
-# Local env / user config
-.env
-.env.*
-!.env.example
-
-# Editor / OS
+*.log
+*.tsbuildinfo
 .DS_Store
 Thumbs.db
-.vscode/
-.idea/
-*.swp
-
-# Logs & caches
-*.log
-npm-debug.log*
-pnpm-debug.log*
-.eslintcache
-*.tsbuildinfo

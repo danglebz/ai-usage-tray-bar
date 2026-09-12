@@ -1,0 +1,6 @@
+# Normalise line endings so checkouts on Windows and CI agree with the LF-only sources.
+* text=auto eol=lf
+*.cmd text eol=crlf
+
+*.png binary
+*.ico binary
