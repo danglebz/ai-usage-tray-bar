@@ -8,6 +8,12 @@ updates:
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
+    ignore:
+      # typescript-eslint 8 refuses to load against TS 7 ("does not support TS 7.0"),
+      # so a major TypeScript bump takes `pnpm lint` down with it. Lift this once
+      # https://github.com/typescript-eslint/typescript-eslint/issues/10940 ships.
+      - dependency-name: typescript
+        update-types: [version-update:semver-major]
     groups:
       # One PR for the lint/format/test toolchain: these move together and never
       # reach users, so reviewing them separately is not worth the noise.
