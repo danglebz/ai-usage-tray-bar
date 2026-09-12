@@ -1,0 +1,398 @@
+:root {
+  color-scheme: light dark;
+  --bg: #ffffff;
+  --card: #f3f4f6;
+  --card-border: #e5e7eb;
+  --fg: #111827;
+  --muted: #6b7280;
+  --track: #e5e7eb;
+  --normal: #22c55e;
+  --warning: #f59e0b;
+  --critical: #ef4444;
+  --unknown: #9ca3af;
+  --accent: #2563eb;
+  --font: "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1c1c1e;
+    --card: #2a2a2d;
+    --card-border: #3a3a3d;
+    --fg: #f3f4f6;
+    --muted: #9ca3af;
+    --track: #3f3f46;
+    --normal: #4ade80;
+    --warning: #fbbf24;
+    --critical: #f87171;
+    --unknown: #71717a;
+    --accent: #60a5fa;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+html,
+body {
+  margin: 0;
+  height: 100%;
+}
+body {
+  font: 13px/1.4 var(--font);
+  color: var(--fg);
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
+  user-select: none;
+}
+
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px 8px;
+  -webkit-app-region: drag;
+}
+header .title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  font-size: 14px;
+}
+header .stamp {
+  color: var(--muted);
+  font-weight: 400;
+  font-size: 11px;
+}
+header .actions {
+  display: flex;
+  gap: 4px;
+  -webkit-app-region: no-drag;
+}
+header button {
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: 15px;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+header button:hover {
+  background: var(--card);
+  color: var(--fg);
+}
+.dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--unknown);
+}
+.dot.normal {
+  background: var(--normal);
+}
+.dot.warning {
+  background: var(--warning);
+}
+.dot.critical {
+  background: var(--critical);
+}
+.spin {
+  animation: spin 1s linear infinite;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+main {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 12px 12px;
+}
+main::-webkit-scrollbar {
+  width: 8px;
+}
+main::-webkit-scrollbar-thumb {
+  background: var(--track);
+  border-radius: 4px;
+}
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+}
+.card .head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.card .name {
+  font-weight: 600;
+}
+.card .plan {
+  color: var(--muted);
+  font-size: 11px;
+  text-transform: capitalize;
+}
+.card .acct {
+  color: var(--muted);
+  font-size: 11px;
+  margin-left: auto;
+  max-width: 45%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.card .status {
+  color: var(--muted);
+  font-size: 12px;
+}
+.card.err .status {
+  color: var(--critical);
+}
+.card.idle {
+  opacity: 0.75;
+}
+.card.idle .status {
+  color: var(--muted);
+}
+.card .badge {
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--track);
+  color: var(--muted);
+}
+
+.win {
+  margin: 6px 0;
+}
+.win .lbl {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+}
+.win .lbl .pct {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+.win .lbl .reset {
+  color: var(--muted);
+  font-size: 11px;
+}
+.bar {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--track);
+  overflow: hidden;
+  margin-top: 3px;
+}
+.bar > i {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: var(--normal);
+  transition: width 0.3s;
+}
+.bar.warning > i {
+  background: var(--warning);
+}
+.bar.critical > i {
+  background: var(--critical);
+}
+.bar.unknown > i {
+  background: var(--unknown);
+  width: 0;
+}
+.win .detail {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.extras {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin-top: 6px;
+  font-size: 11px;
+  color: var(--muted);
+}
+.extras b {
+  color: var(--fg);
+  font-weight: 500;
+}
+
+.empty {
+  color: var(--muted);
+  text-align: center;
+  padding: 40px 0;
+}
+
+/* settings */
+form section {
+  margin-bottom: 14px;
+}
+form h2 {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  margin: 0;
+}
+
+/* A plain setting and its switch share a row, switch flush right - same shape as .secHead. */
+.setRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 8px 0;
+  cursor: pointer;
+}
+
+/* Provider heading and its on/off switch share a row, switch flush right. */
+.secHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 14px 0 6px;
+  cursor: pointer;
+}
+
+/* A checkbox drawn as a switch: appearance:none removes the native box, the thumb is
+   the ::after pseudo-element, and :checked slides it and repaints the track. */
+input.switch {
+  appearance: none;
+  -webkit-appearance: none;
+  flex: none;
+  position: relative;
+  width: 34px;
+  height: 20px;
+  margin: 0;
+  border-radius: 999px;
+  background: var(--track);
+  border: 1px solid var(--card-border);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+input.switch::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--bg);
+  transition: transform 0.15s;
+}
+input.switch:checked {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+input.switch:checked::after {
+  transform: translateX(14px);
+  background: #fff;
+}
+input.switch:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+form label {
+  display: block;
+  margin: 6px 0;
+}
+form label.row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+form input[type="text"],
+form input[type="password"],
+form input[type="number"] {
+  font: inherit;
+  color: var(--fg);
+  background: var(--bg);
+  border: 1px solid var(--card-border);
+  border-radius: 6px;
+  padding: 4px 8px;
+  width: 100%;
+}
+form input[type="number"] {
+  width: 64px;
+  display: inline-block;
+}
+form .hint {
+  color: var(--muted);
+  font-size: 11px;
+}
+/* Field label on the left, its "where do I get this" link on the right. */
+.fieldHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.help {
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.45;
+  margin: 6px 0 2px;
+}
+a.ext {
+  color: var(--accent);
+  font-size: 11px;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+}
+a.ext:hover {
+  text-decoration: underline;
+}
+.formFooter {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-top: 12px;
+}
+.formFooter .spacer {
+  flex: 1;
+}
+/* Settings save themselves; this confirms it happened without a dialog. */
+#savedNote {
+  color: var(--normal);
+  font-size: 11px;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+#savedNote.show {
+  opacity: 1;
+}
+button.primary,
+button.ghost {
+  font: inherit;
+  border-radius: 6px;
+  padding: 6px 12px;
+  cursor: pointer;
+  border: 1px solid var(--card-border);
+  background: var(--card);
+  color: var(--fg);
+}
+button.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}

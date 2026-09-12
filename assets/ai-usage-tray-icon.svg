@@ -1,0 +1,34 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="surface" x1="52" y1="38" x2="460" y2="480" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#172554"/>
+      <stop offset="1" stop-color="#0B1026"/>
+    </linearGradient>
+    <linearGradient id="usage" x1="99" y1="105" x2="427" y2="413" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#2DD4BF"/>
+      <stop offset=".52" stop-color="#38BDF8"/>
+      <stop offset="1" stop-color="#818CF8"/>
+    </linearGradient>
+    <filter id="glow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="9" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <!-- App tile keeps the mark legible on a dark system tray. -->
+  <rect x="24" y="24" width="464" height="464" rx="120" fill="url(#surface)"/>
+  <rect x="25" y="25" width="462" height="462" rx="119" stroke="#334155" stroke-width="2"/>
+
+  <!-- Meter track and current AI-usage arc. -->
+  <circle cx="256" cy="256" r="152" stroke="#273454" stroke-width="46"/>
+  <circle cx="256" cy="256" r="152" stroke="url(#usage)" stroke-width="46" stroke-linecap="round"
+          stroke-dasharray="770 955" transform="rotate(-136 256 256)" filter="url(#glow)"/>
+
+  <!-- Compact, provider-neutral usage bars. -->
+  <path d="M191 307V264C191 252.954 199.954 244 211 244H221C232.046 244 241 252.954 241 264V307C241 318.046 232.046 327 221 327H211C199.954 327 191 318.046 191 307Z" fill="#E0F2FE"/>
+  <path d="M255 307V218C255 206.954 263.954 198 275 198H285C296.046 198 305 206.954 305 218V307C305 318.046 296.046 327 285 327H275C263.954 327 255 318.046 255 307Z" fill="#F8FAFC"/>
+  <path d="M319 307V239C319 227.954 327.954 219 339 219H349C360.046 219 369 227.954 369 239V307C369 318.046 360.046 327 349 327H339C327.954 327 319 318.046 319 307Z" fill="#C4B5FD"/>
+
+  <!-- Status point at the live end of the meter. -->
+  <circle cx="142" cy="153" r="13" fill="#F8FAFC"/>
+</svg>

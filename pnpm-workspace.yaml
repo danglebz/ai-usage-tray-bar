@@ -1,0 +1,9 @@
+# electron-winstaller (pulled in by electron-builder) has a postinstall that fetches the
+# Squirrel.Windows toolchain. This app ships as a portable exe, never as a Squirrel
+# installer, so the download is skipped. Set to true if a Squirrel/NSIS target is added.
+allowBuilds:
+  electron-winstaller: false
+
+# Refuse to install on a Node version outside package.json "engines" (the floor is 22.12;
+# .nvmrc names 24, the version this is developed on) rather than fail later in stranger ways.
+engineStrict: true

@@ -1,0 +1,85 @@
+{
+  "name": "ai-usage-tray",
+  "productName": "AI Usage Tray",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Windows tray app that shows remaining quota / credits for Claude Code, Codex, Copilot, Gemini CLI, OpenRouter and API keys",
+  "keywords": [
+    "electron",
+    "windows",
+    "tray",
+    "usage",
+    "quota",
+    "claude-code",
+    "codex",
+    "copilot",
+    "gemini-cli",
+    "openrouter"
+  ],
+  "homepage": "https://github.com/danglebz/ai-usage-tray-bar#readme",
+  "bugs": {
+    "url": "https://github.com/danglebz/ai-usage-tray-bar/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/danglebz/ai-usage-tray-bar.git"
+  },
+  "license": "MIT",
+  "author": "DABz",
+  "type": "module",
+  "main": "src/main.ts",
+  "scripts": {
+    "postinstall": "install-electron",
+    "start": "electron .",
+    "probe": "node src/cli.ts",
+    "icon": "electron scripts/make-icon.ts",
+    "screenshot": "node scripts/screenshot.ts",
+    "typecheck": "tsc -p tsconfig.json && tsc -p tsconfig.renderer.json",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "verify": "pnpm run typecheck && pnpm run lint && pnpm run format:check && pnpm run test",
+    "dist": "electron-builder --win"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^24.13.4",
+    "electron": "^44.3.0",
+    "electron-builder": "^26.15.3",
+    "eslint": "^10.10.0",
+    "eslint-config-prettier": "^10.1.8",
+    "globals": "^17.12.0",
+    "prettier": "^3.9.6",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.70.0",
+    "vitest": "^5.0.0"
+  },
+  "packageManager": "pnpm@11.15.1",
+  "engines": {
+    "node": ">=22.18"
+  },
+  "os": [
+    "win32"
+  ],
+  "build": {
+    "appId": "local.ai-usage-tray",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "src/**/*",
+      "!src/**/*.test.ts",
+      "assets/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        "portable"
+      ],
+      "icon": "assets/icon.ico"
+    }
+  }
+}

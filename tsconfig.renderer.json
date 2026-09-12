@@ -1,0 +1,11 @@
+{
+  // The panel runs in Chromium, which cannot strip types, so it stays JavaScript and is
+  // checked through JSDoc against the same types the main process uses (src/types.ts).
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "lib": ["es2024", "dom", "dom.iterable"],
+    "types": []
+  },
+  "include": ["src/renderer/**/*.js", "src/renderer/**/*.d.ts"],
+  "exclude": []
+}

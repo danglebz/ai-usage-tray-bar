@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; style-src 'self'; script-src 'self'; img-src 'self' data:"
+    />
+    <title>AI Usage</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <header>
+      <div class="title">
+        <span class="dot" id="headDot"></span>
+        <span>AI Usage</span>
+        <span class="stamp" id="stamp"></span>
+      </div>
+      <div class="actions">
+        <button id="btnRefresh" title="Refresh (R)">⟳</button>
+        <button id="btnSettings" title="Settings (S)">⚙</button>
+        <button id="btnClose" title="Close (Esc)">✕</button>
+      </div>
+    </header>
+
+    <main id="viewUsage"></main>
+
+    <main id="viewSettings" hidden>
+      <form id="settingsForm">
+        <section>
+          <h2>General</h2>
+          <label>Refresh every <input type="number" name="refreshMinutes" min="1" max="60" /> min</label>
+          <label
+            >Notify when a window reaches <input type="number" name="notifyAtPercent" min="0" max="100" /> % (0 =
+            off)</label
+          >
+          <label class="setRow"
+            ><span>Start with Windows</span><input type="checkbox" class="switch" name="openAtLogin"
+          /></label>
+        </section>
+        <div id="providerSettings"></div>
+        <footer class="formFooter">
+          <button type="button" id="btnConfigDir" class="ghost">Open config folder</button>
+          <button type="button" id="btnQuit" class="ghost">Quit app</button>
+          <span class="spacer"></span>
+          <span id="savedNote">Saved</span>
+          <button type="button" id="btnDone" class="primary">Done</button>
+        </footer>
+      </form>
+    </main>
+
+    <script src="renderer.js"></script>
+  </body>
+</html>

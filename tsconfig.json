@@ -1,0 +1,29 @@
+{
+  // Type-checks only. Nothing is compiled: Electron 44 (Node 24) and Node >= 22.18 strip
+  // type annotations at load time, so the .ts files under src/ run as-is. That keeps the
+  // launcher, electron-builder and `pnpm start` free of a build step, at the price of
+  // erasable syntax only (no enums, namespaces or parameter properties).
+  "compilerOptions": {
+    "target": "es2024",
+    "lib": ["es2024"],
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "types": ["node"],
+    "resolveJsonModule": true,
+
+    "noEmit": true,
+    "allowImportingTsExtensions": true,
+    "erasableSyntaxOnly": true,
+    "verbatimModuleSyntax": true,
+
+    "strict": true,
+    "noImplicitOverride": true,
+    "noFallthroughCasesInSwitch": true,
+    "noPropertyAccessFromIndexSignature": false,
+    "allowJs": true,
+    "checkJs": true,
+    "skipLibCheck": true
+  },
+  "include": ["src/**/*.ts", "src/preload.cjs", "scripts/**/*.ts", "eslint.config.js"],
+  "exclude": ["src/renderer"]
+}
