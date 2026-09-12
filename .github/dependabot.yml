@@ -1,0 +1,23 @@
+# The portable exe ships Electron and its Chromium inside it, so a dependency update
+# here is how a Chromium security fix reaches users - there is no other update path.
+version: 2
+
+updates:
+  - package-ecosystem: npm # covers pnpm; Dependabot reads pnpm-lock.yaml
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      # One PR for the lint/format/test toolchain: these move together and never
+      # reach users, so reviewing them separately is not worth the noise.
+      dev-tooling:
+        dependency-type: development
+        exclude-patterns:
+          - electron
+          - electron-builder
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
