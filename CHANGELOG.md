@@ -2,6 +2,13 @@
 
 All notable changes to this project are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses [Semantic Versioning](https://semver.org/). From 0.1.1 on, release-please writes the entries below from the commit subjects — see [Releasing](README.md#releasing) rather than editing this file.
 
+## [0.1.2](https://github.com/danglebz/ai-usage-tray-bar/compare/v0.1.1...v0.1.2) (2026-09-12)
+
+
+### Fixed
+
+* keep the release build from failing on its own changelog ([0e05afa](https://github.com/danglebz/ai-usage-tray-bar/commit/0e05afa1747780b0181c09e2cbfd82e6e83d418f))
+
 ## [0.1.1](https://github.com/danglebz/ai-usage-tray-bar/compare/v0.1.0...v0.1.1) (2026-09-12)
 
 
