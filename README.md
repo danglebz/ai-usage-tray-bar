@@ -1,5 +1,9 @@
 # AI Usage Tray
 
+[![CI](https://github.com/danglebz/ai-usage-tray-bar/actions/workflows/ci.yml/badge.svg)](https://github.com/danglebz/ai-usage-tray-bar/actions/workflows/ci.yml)
+[![Latest release](https://img.shields.io/github/v/release/danglebz/ai-usage-tray-bar)](https://github.com/danglebz/ai-usage-tray-bar/releases/latest)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
 A small Windows tray app that puts the remaining quota and credits of your AI coding tools in one place: Claude Code, Codex CLI, GitHub Copilot, Gemini CLI, OpenRouter, and the Anthropic / OpenAI pay-as-you-go APIs.
 
 Click the tray icon for a panel with one card per provider — used percentage, time until the window resets, credits left — and get a Windows notification once a limit crosses a threshold you choose.
@@ -26,7 +30,7 @@ Every provider can be switched off in Settings. A provider that fails shows its 
 
 ### Portable exe
 
-Download `AI Usage Tray <version>.exe` from the [Releases](https://github.com/danglebz/ai-usage-tray-bar/releases) page and run it. It is not code-signed, so SmartScreen may warn on first launch — **More info → Run anyway**.
+Download `AI.Usage.Tray.<version>.exe` from the [Releases](https://github.com/danglebz/ai-usage-tray-bar/releases) page and run it. It is not code-signed, so SmartScreen may warn on first launch — **More info → Run anyway**.
 
 > **Smart App Control.** If Windows Security → App & browser control → Smart App Control is _enforced_ on your machine, it blocks unsigned executables outright: the portable exe starts, unpacks itself under `%TEMP%`, and the unpacked copy is killed. That is not the SmartScreen prompt you can click through. On such a machine run from source instead (below) — `electron.exe` carries enough reputation to be allowed.
 >
