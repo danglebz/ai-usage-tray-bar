@@ -1,0 +1,58 @@
+name: Release
+
+# Pushing a tag such as v0.2.0 builds the portable exe and attaches it to a GitHub Release
+# for that tag. `pnpm version minor && git push --follow-tags` is the normal way to get here.
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Tag must match package.json
+        shell: bash
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          version="$(node -p "require('./package.json').version")"
+          if [ "$tag" != "$version" ]; then
+            echo "tag v$tag does not match package.json version $version" >&2
+            exit 1
+          fi
+
+      - run: pnpm run verify
+
+      - run: pnpm exec electron-builder --win --publish never
+
+      - name: Release notes from CHANGELOG.md
+        id: notes
+        shell: bash
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          # Everything between this version's heading and the next "## [" heading.
+          awk -v v="$version" '
+            $0 ~ "^## \[" v "\]" { on = 1; next }
+            on && /^## \[/ { exit }
+            on { print }
+          ' CHANGELOG.md > notes.md
+          if [ ! -s notes.md ]; then echo "No CHANGELOG.md entry for $version; using generated notes." > notes.md; fi
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*.exe
+          body_path: notes.md
+          generate_release_notes: true
