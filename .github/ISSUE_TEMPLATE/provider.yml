@@ -1,0 +1,51 @@
+name: A provider card is wrong or failing
+description: Wrong numbers, an error on the card, or a provider that never loads.
+labels: [provider]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        The provider table in the README says which providers are verified and on which
+        plan. A provider marked untested there may simply never have been tried on your
+        plan - that is still worth reporting.
+  - type: dropdown
+    id: provider
+    attributes:
+      label: Provider
+      options:
+        - Claude Code
+        - Codex CLI
+        - GitHub Copilot
+        - Gemini CLI
+        - OpenRouter
+        - Anthropic API
+        - OpenAI API
+    validations:
+      required: true
+  - type: input
+    id: plan
+    attributes:
+      label: Your plan
+      description: Pro, Max, Free, Plus, Team, Workspace - whichever applies. This is usually the difference between a card that works and one that does not.
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What the card shows, and what it should show
+      description: A screenshot of the card helps. Mask anything you would not post publicly.
+    validations:
+      required: true
+  - type: textarea
+    id: probe
+    attributes:
+      label: Output of `pnpm probe <provider-id>`
+      description: The terminal probe prints the same snapshot without the GUI. Check it for tokens before pasting.
+      render: text
+  - type: input
+    id: version
+    attributes:
+      label: App version
+      placeholder: 0.1.0, or the commit if running from source
+    validations:
+      required: true
