@@ -1,7 +1,7 @@
 {
   "name": "ai-usage-tray",
   "productName": "AI Usage Tray",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "private": true,
   "description": "Windows tray app that shows remaining quota / credits for Claude Code, Codex, Copilot, Gemini CLI, OpenRouter and API keys",
   "keywords": [
