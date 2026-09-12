@@ -2,3 +2,7 @@ node_modules/
 dist/
 pnpm-lock.yaml
 *.cmd
+
+# Written by release-please, in its own layout. Checking it made `pnpm verify` fail
+# inside the release build itself, on the very commit the release was cut from.
+CHANGELOG.md
