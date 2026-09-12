@@ -11,6 +11,14 @@ permissions:
   contents: write
   pull-requests: write
 
+# Two of these running at once both try to open the release PR, and the second one fails
+# with "a pull request already exists" - which is how it went the first time a run sat in
+# the queue long enough for the next push to catch up with it. Queue them instead; never
+# cancel, since a cancelled run could stop between tagging and uploading the exe.
+concurrency:
+  group: release-please
+  cancel-in-progress: false
+
 jobs:
   release-please:
     runs-on: ubuntu-latest
