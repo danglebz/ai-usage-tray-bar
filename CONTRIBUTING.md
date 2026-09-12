@@ -18,7 +18,7 @@ Node 22.18+ (24 recommended) and pnpm. `pnpm install` also downloads the Electro
 - `pnpm verify` passes. `pnpm lint:fix` and `pnpm format` fix most of what it complains about.
 - One change per PR. A provider fix and a UI tweak are two PRs.
 - If you touched a provider, say in the PR how you tested it: which plan, and whether you saw a live response. Screenshots of the card help.
-- Add a line to the `Unreleased` section of [CHANGELOG.md](CHANGELOG.md) if a user would notice the change.
+- Leave [CHANGELOG.md](CHANGELOG.md) alone. release-please writes it from the commit subjects, so the subject _is_ the changelog line — make it read like one. Editing the file by hand only creates a conflict with the release PR.
 
 ## Commit messages
 

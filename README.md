@@ -112,14 +112,15 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for the rest.
 
 ## Releasing
 
-Releases are cut from version tags. Bump the version, note the changes in [CHANGELOG.md](CHANGELOG.md), commit, tag and push:
+Versions come from the commits. [release-please](https://github.com/googleapis/release-please) reads the [Conventional Commits](https://www.conventionalcommits.org/) on `main` and keeps a **release PR** open with the next version number, the `package.json` bump and the [CHANGELOG.md](CHANGELOG.md) entry it derived. Merging that PR tags the version, publishes the GitHub Release, and builds the portable exe onto it.
 
-```sh
-pnpm version minor        # or patch / major: updates package.json, commits, tags v0.x.0
-git push --follow-tags
-```
+So there is nothing to run by hand: write `feat:` and `fix:` commits, and merge the release PR when the next version should go out. While the project is pre-1.0, `feat:` bumps the patch and a breaking change bumps the minor.
 
-The `release` workflow builds the portable exe on a Windows runner and attaches it to a GitHub Release for that tag. It refuses to run if the tag and `package.json` disagree.
+Only `feat`, `fix`, `perf`, `revert`, `build` and `refactor` commits reach the changelog; `ci`, `docs`, `test` and `chore` are kept out of it. A run of those alone produces no release PR, which is the intended outcome — nothing a user would notice has changed.
+
+Dependency bumps land as `build(deps)`, so they appear in the changelog but do **not** move the version on their own. When a dependency update matters to users — an Electron security fix reaching them through a new exe, say — commit it as `fix(deps):` so it cuts a release.
+
+`release.yml` stays for the manual path: pushing a `v*` tag yourself, or running the workflow from the Actions tab against an existing tag to rebuild its exe. It refuses to run if the tag and `package.json` disagree.
 
 ## License
 

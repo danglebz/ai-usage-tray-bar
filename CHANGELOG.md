@@ -1,8 +1,6 @@
 # Changelog
 
-All notable changes to this project are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses [Semantic Versioning](https://semver.org/).
-
-## [Unreleased]
+All notable changes to this project are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses [Semantic Versioning](https://semver.org/). From 0.1.1 on, release-please writes the entries below from the commit subjects — see [Releasing](README.md#releasing) rather than editing this file.
 
 ## [0.1.0] - 2026-09-13
 
@@ -24,5 +22,4 @@ First release.
 - TypeScript throughout, run directly by Electron / Node with native type stripping — no build step.
 - pnpm, ESLint, Prettier, Vitest, and CI that runs them on every push; release workflow that builds the exe for version tags.
 
-[Unreleased]: https://github.com/danglebz/ai-usage-tray-bar/compare/v0.1.0...HEAD
 [0.1.0]: https://github.com/danglebz/ai-usage-tray-bar/releases/tag/v0.1.0
