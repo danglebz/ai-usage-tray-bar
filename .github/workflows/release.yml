@@ -1,13 +1,15 @@
 name: Release
 
-# Pushing a tag such as v0.2.0 builds the portable exe and attaches it to a GitHub Release
-# for that tag. `pnpm version minor && git push --follow-tags` is the normal way to get here.
+# The manual path. Normal releases go through release-please, which tags the version and
+# builds the exe itself in release-please.yml - its tag is pushed with GITHUB_TOKEN and so
+# never reaches this file. What is left for here: a `v*` tag pushed by a person, and the
+# dispatch below for rebuilding the exe of a tag that already exists.
+#
+# Note that a dispatch checks the tag out as it was: rebuilding a tag whose tree fails
+# `pnpm verify` today cannot succeed, however healthy main is.
 on:
   push:
     tags: ["v*"]
-  # A tag pushed in the same commit range that introduces this file does not
-  # trigger it - GitHub does not know the workflow yet. Re-run it by hand here
-  # instead of deleting and re-pushing the tag.
   workflow_dispatch:
     inputs:
       tag:
