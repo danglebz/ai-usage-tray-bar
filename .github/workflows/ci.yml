@@ -1,12 +1,20 @@
 name: CI
 
 on:
+  # Branches are covered by the pull_request trigger; listing them here as well ran
+  # every PR branch twice on the same commit, and Windows runner minutes bill at 2x.
   push:
-    branches: ["**"]
+    branches: [main]
   pull_request:
 
 permissions:
   contents: read
+
+# A second push to a branch makes the run already in flight pointless. main is exempt:
+# its runs are what the CI badge and the release history read.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
   verify:
