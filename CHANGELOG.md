@@ -2,6 +2,17 @@
 
 All notable changes to this project are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses [Semantic Versioning](https://semver.org/). From 0.1.1 on, release-please writes the entries below from the commit subjects — see [Releasing](README.md#releasing) rather than editing this file.
 
+## [0.1.1](https://github.com/danglebz/ai-usage-tray-bar/compare/v0.1.0...v0.1.1) (2026-09-12)
+
+
+### Internal
+
+* **deps-dev:** bump @types/node ([#6](https://github.com/danglebz/ai-usage-tray-bar/issues/6)) ([026d49a](https://github.com/danglebz/ai-usage-tray-bar/commit/026d49a49b73cc930339c3ac78c97b9291daa5d0))
+* **deps:** bump actions/checkout from 4 to 7 ([#2](https://github.com/danglebz/ai-usage-tray-bar/issues/2)) ([438a1a7](https://github.com/danglebz/ai-usage-tray-bar/commit/438a1a7c4ea7c41b1611ae93e01c990068aa683a))
+* **deps:** bump actions/setup-node from 4 to 7 ([#3](https://github.com/danglebz/ai-usage-tray-bar/issues/3)) ([7c7bd26](https://github.com/danglebz/ai-usage-tray-bar/commit/7c7bd26d1d380030583498d2835a60c0a2a2e73b))
+* **deps:** bump pnpm/action-setup from 4 to 6 ([#1](https://github.com/danglebz/ai-usage-tray-bar/issues/1)) ([c81f764](https://github.com/danglebz/ai-usage-tray-bar/commit/c81f76482423ccf5c342ba3e904292fc9ee68f49))
+* **deps:** bump softprops/action-gh-release from 2 to 3 ([#4](https://github.com/danglebz/ai-usage-tray-bar/issues/4)) ([ecba035](https://github.com/danglebz/ai-usage-tray-bar/commit/ecba035dbf358b332d1c7dc8aefe9bf54fb995ff))
+
 ## [0.1.0] - 2026-09-13
 
 First release.
