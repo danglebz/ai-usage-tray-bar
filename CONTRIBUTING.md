@@ -24,6 +24,10 @@ Node 22.18+ (24 recommended) and pnpm. `pnpm install` also downloads the Electro
 
 [Conventional Commits](https://www.conventionalcommits.org/): `feat:`, `fix:`, `docs:`, `refactor:`, `build:`, `ci:`, `chore:`, with an optional scope such as `fix(codex):`. The subject says what changed; the body, when there is one, says why — the reasoning that is not visible in the diff.
 
+commitlint checks this in a `commit-msg` hook, installed by `pnpm install`. The check is there because the subjects are load-bearing: release-please reads them to pick the next version and copies them into the changelog, so a malformed one is not caught later — it just ends up in the wrong release, or in none.
+
+`feat:` and `fix:` are the two that reach users, and they read best as a sentence completing "this commit will…". `git commit --no-verify` skips the hook; nothing downstream will forgive the result.
+
 ## Code
 
 - TypeScript, ESM, and **no build step**: Electron and Node strip the types at load time. That means [erasable syntax only](https://www.typescriptlang.org/tsconfig/#erasableSyntaxOnly) — no `enum`, `namespace` or constructor parameter properties — and relative imports carry the `.ts` extension.

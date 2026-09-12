@@ -30,6 +30,7 @@
   "main": "src/main.ts",
   "scripts": {
     "postinstall": "install-electron",
+    "prepare": "husky",
     "start": "electron .",
     "probe": "node src/cli.ts",
     "icon": "electron scripts/make-icon.ts",
@@ -45,6 +46,8 @@
     "dist": "electron-builder --win"
   },
   "devDependencies": {
+    "@commitlint/cli": "^21.2.2",
+    "@commitlint/config-conventional": "^21.2.2",
     "@eslint/js": "^10.0.1",
     "@types/node": "^26.5.1",
     "electron": "^44.3.0",
@@ -52,6 +55,7 @@
     "eslint": "^10.10.0",
     "eslint-config-prettier": "^10.1.8",
     "globals": "^17.12.0",
+    "husky": "^9.1.7",
     "prettier": "^3.9.6",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.70.0",
