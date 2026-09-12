@@ -4,6 +4,6 @@
 allowBuilds:
   electron-winstaller: false
 
-# Refuse to install on a Node version outside package.json "engines" (the floor is 22.12;
+# Refuse to install on a Node version outside package.json "engines" (the floor is 22.18;
 # .nvmrc names 24, the version this is developed on) rather than fail later in stranger ways.
 engineStrict: true
