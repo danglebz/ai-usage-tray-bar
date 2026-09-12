@@ -24,12 +24,6 @@
     "checkJs": true,
     "skipLibCheck": true
   },
-  "include": [
-    "src/**/*.ts",
-    "src/preload.cjs",
-    "scripts/**/*.ts",
-    "eslint.config.js",
-    "commitlint.config.js"
-  ],
+  "include": ["src/**/*.ts", "src/preload.cjs", "scripts/**/*.ts", "eslint.config.js", "commitlint.config.js"],
   "exclude": ["src/renderer"]
 }
