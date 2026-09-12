@@ -118,7 +118,7 @@ So there is nothing to run by hand: write `feat:` and `fix:` commits, and merge 
 
 Only `feat`, `fix`, `perf`, `revert`, `build` and `refactor` commits reach the changelog; `ci`, `docs`, `test` and `chore` are kept out of it. A run of those alone produces no release PR, which is the intended outcome — nothing a user would notice has changed.
 
-Dependency bumps land as `build(deps)`, so they appear in the changelog but do **not** move the version on their own. When a dependency update matters to users — an Electron security fix reaching them through a new exe, say — commit it as `fix(deps):` so it cuts a release.
+Any type that reaches the changelog also counts towards a release, `build` included — so a batch of Dependabot merges is enough to open a release PR on its own. That is deliberate: the exe carries its own Electron and Chromium, so a dependency bump is how a security fix reaches anyone, and it should be able to ship without waiting for an unrelated feature. It does not make releases noisy, because the PR only accumulates until someone merges it.
 
 `release.yml` stays for the manual path: pushing a `v*` tag yourself, or running the workflow from the Actions tab against an existing tag to rebuild its exe. It refuses to run if the tag and `package.json` disagree.
 
