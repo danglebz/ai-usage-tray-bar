@@ -2,6 +2,18 @@
 
 All notable changes to this project are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses [Semantic Versioning](https://semver.org/). From 0.1.1 on, release-please writes the entries below from the commit subjects — see [Releasing](README.md#releasing) rather than editing this file.
 
+## [0.1.3](https://github.com/danglebz/ai-usage-tray-bar/compare/v0.1.2...v0.1.3) (2026-09-13)
+
+
+### Added
+
+* add a pin button that keeps the panel open ([2a9662e](https://github.com/danglebz/ai-usage-tray-bar/commit/2a9662e20a5a468c99b0b5f59b129f26ac87070f))
+
+
+### Internal
+
+* check commit messages with commitlint in a git hook ([e206822](https://github.com/danglebz/ai-usage-tray-bar/commit/e2068220f162f25cb4a67074ef2dd5574b6e77b9))
+
 ## [0.1.2](https://github.com/danglebz/ai-usage-tray-bar/compare/v0.1.1...v0.1.2) (2026-09-12)
 
 
