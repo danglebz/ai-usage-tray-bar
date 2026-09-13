@@ -264,6 +264,19 @@ $("#btnDone").addEventListener("click", () => showSettings(false));
 $("#btnSettings").addEventListener("click", () => showSettings(settingsHidden()));
 $("#btnConfigDir").addEventListener("click", () => void window.api.openConfigDir());
 $("#btnRefresh").addEventListener("click", () => void window.api.refresh());
+
+const btnPin = $("#btnPin");
+/** aria-pressed is the state itself, not a mirror of it: the CSS reads it too. */
+function pinned() {
+  return btnPin.getAttribute("aria-pressed") === "true";
+}
+/** @param {boolean} on @param {boolean} [persist] */
+function setPinned(on, persist = true) {
+  btnPin.setAttribute("aria-pressed", String(on));
+  btnPin.title = on ? "Unpin panel (P)" : "Keep panel open (P)";
+  if (persist) void window.api.setPinned(on);
+}
+btnPin.addEventListener("click", () => setPinned(!pinned()));
 // ✕ closes the panel, as it does in every other tray app. Quitting is deliberate: the tray
 // menu, or the button in Settings - an accidental quit leaves nothing on screen to explain
 // where the app went.
@@ -274,6 +287,7 @@ document.addEventListener("keydown", (e) => {
   if (e.key === "Escape") void window.api.hide();
   if (e.key === "r" || e.key === "R") void window.api.refresh();
   if (e.key === "s" || e.key === "S") showSettings(settingsHidden());
+  if (e.key === "p" || e.key === "P") setPinned(!pinned());
 });
 
 window.api.onUsage((s) => {
@@ -284,6 +298,8 @@ void window.api.getUsage().then((s) => {
   state = s;
   renderUsage();
 });
+// Reflect the stored pin without writing it straight back out again.
+void window.api.getConfig().then((cfg) => setPinned(!!cfg.pinned, false));
 setInterval(() => {
   if (!viewUsage.hidden) renderUsage();
 }, 30_000); // keep "resets in" and "x min ago" fresh

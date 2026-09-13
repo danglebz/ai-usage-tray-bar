@@ -129,6 +129,7 @@ function createPopup(): void {
   });
   void popup.loadFile(path.join(import.meta.dirname, "renderer", "index.html"));
   popup.on("blur", () => {
+    if (cfg.pinned) return; // pinned: only Esc, ✕ and the tray icon close it
     if (!popup.webContents.isDevToolsOpened()) popup.hide();
   });
   popup.on("close", (e) => {
@@ -456,6 +457,12 @@ ipcMain.handle("app:openExternal", (_e, url: string) => {
   if (/^https:\/\//.test(url)) void shell.openExternal(url);
 });
 ipcMain.handle("app:hide", () => popup.hide());
+// Deliberately not routed through config:set, which reschedules the timer, reapplies the
+// login item and fetches every provider - none of which a pin has anything to do with.
+ipcMain.handle("app:setPinned", (_e, pinned: boolean) => {
+  cfg.pinned = !!pinned;
+  config.save(cfg);
+});
 
 // Subscribing is what keeps the app alive without windows; the popup only ever hides anyway.
 app.on("window-all-closed", () => {});

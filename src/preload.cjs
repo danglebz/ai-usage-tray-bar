@@ -13,6 +13,7 @@ const api = {
   setConfig: (patch) => ipcRenderer.invoke("config:set", patch),
   quit: () => ipcRenderer.invoke("app:quit"),
   hide: () => ipcRenderer.invoke("app:hide"),
+  setPinned: (pinned) => ipcRenderer.invoke("app:setPinned", pinned),
   openConfigDir: () => ipcRenderer.invoke("app:openConfigDir"),
   openExternal: (url) => ipcRenderer.invoke("app:openExternal", url),
   onUsage: (cb) => {

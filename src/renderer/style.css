@@ -82,10 +82,32 @@ header button {
   height: 28px;
   border-radius: 6px;
   cursor: pointer;
+  /* Centres the glyphs and the pin's svg alike, whatever their own metrics are. */
+  display: grid;
+  place-items: center;
+  padding: 0;
 }
 header button:hover {
   background: var(--card);
   color: var(--fg);
+}
+header button svg {
+  width: 15px;
+  height: 15px;
+  fill: currentColor;
+}
+/* Unpinned, the pin leans; pinned, it stands upright and takes the accent. Same idiom as
+   every other pin toggle, and it survives being read at a glance in the corner of a screen. */
+#btnPin svg {
+  transform: rotate(-40deg);
+  transition: transform 120ms ease;
+}
+#btnPin[aria-pressed="true"] {
+  color: var(--accent);
+  background: var(--card);
+}
+#btnPin[aria-pressed="true"] svg {
+  transform: none;
 }
 .dot {
   width: 10px;

@@ -94,6 +94,8 @@ export interface AppConfig {
   openAtLogin: boolean;
   /** 0 switches notifications off. */
   notifyAtPercent: number;
+  /** Keep the panel open when it loses focus. Esc and ✕ still close it. */
+  pinned: boolean;
   providers: Record<string, ProviderConfig>;
 }
 
@@ -128,6 +130,8 @@ export interface Api {
   setConfig(patch: ConfigPatch): Promise<PublicConfig>;
   quit(): Promise<void>;
   hide(): Promise<void>;
+  /** Kept out of setConfig: that one reschedules timers and re-fetches every provider. */
+  setPinned(pinned: boolean): Promise<void>;
   openConfigDir(): Promise<void>;
   openExternal(url: string): Promise<void>;
   /** Subscribe to refreshes; returns the unsubscribe function. */

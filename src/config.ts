@@ -11,6 +11,7 @@ export const DEFAULTS: AppConfig = {
   refreshMinutes: 3,
   openAtLogin: false,
   notifyAtPercent: 90,
+  pinned: false,
   providers: {
     claude: { enabled: true },
     codex: { enabled: true },
