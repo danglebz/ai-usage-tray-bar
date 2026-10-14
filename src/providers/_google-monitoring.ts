@@ -82,11 +82,15 @@ export function quotaWindows(
   usage: Series[],
   kind: "gemini" | "veo",
   now = Date.now(),
+  quotaName = "",
 ): UsageWindow[] {
   const key = (s: Series) => `${s.model}|${s.limit}|${s.location}`;
   const windows: UsageWindow[] = [];
   for (const limit of limits.filter((s) => s.model.toLowerCase().includes(kind))) {
-    const samples = usage.filter((s) => key(s) === key(limit)).flatMap((s) => s.points);
+    const samples = usage
+      .filter((s) => key(s) === key(limit))
+      .flatMap((s) => s.points)
+      .filter((p) => p.at <= now);
     const latest = Math.max(...samples.map((p) => p.at));
     const ceilings = [...limit.points].filter((p) => p.at <= now).sort((a, b) => b.at - a.at);
     const ceiling = ceilings.find((p) => !Number.isFinite(latest) || p.at <= latest) ?? ceilings[0];
@@ -98,9 +102,18 @@ export function quotaWindows(
     // Do not compare a one-minute DELTA with a daily or unknown quota period.
     const comparable =
       used !== null && ceiling.at <= latest && latest - ceiling.at < 5 * 60000 && /per.?minute/i.test(limit.limit);
+    const unit = /token/i.test(limit.limit + quotaName)
+      ? "tokens"
+      : /request|prediction/i.test(limit.limit + quotaName)
+        ? "requests"
+        : "quota";
+    const period = /per.?minute/i.test(limit.limit) ? "/min" : /per.?day/i.test(limit.limit) ? "/day" : "";
+    const tierName = limit.limit + " " + quotaName;
+    const paid = tierName.match(/paid.?tier.?(\d+)?/i);
+    const tier = /free.?tier/i.test(tierName) ? " · free" : paid ? ` · paid ${paid[1] || "1"}` : "";
     windows.push(
       win(
-        `${limit.model} · ${limit.limit} · ${limit.location}`,
+        `${limit.model} · ${unit}${period}${tier} · ${limit.location}`,
         comparable ? (ceiling.value > 0 ? (used / ceiling.value) * 100 : used > 0 ? 100 : 0) : null,
         null,
         {
@@ -154,7 +167,7 @@ export async function fetchGoogle(config: ProviderConfig, kind: "gemini" | "veo"
           metric(auth.token, auth.project, `${base}quota/${name}/limit`, recent, now, false, 60),
           metric(auth.token, auth.project, `${base}quota/${name}/usage`, recent, now, true, 60),
         ]);
-        return { limit, usage };
+        return { name, limit, usage };
       }),
     ]);
     const all = [monthly, ...quotas.flatMap((q) => [q.limit, q.usage])];
@@ -168,7 +181,9 @@ export async function fetchGoogle(config: ProviderConfig, kind: "gemini" | "veo"
     const total = matching.reduce((n, s) => n + s.points.reduce((sum, p) => sum + p.value, 0), 0);
     const label =
       kind === "veo"
-        ? "Month requests (UTC)"
+        ? backend === "gemini"
+          ? "Month request quota (paid tier 1, UTC)"
+          : "Month requests (UTC)"
         : backend === "vertex"
           ? "Month tokens (UTC)"
           : "Month output tokens (UTC)";
@@ -180,7 +195,7 @@ export async function fetchGoogle(config: ProviderConfig, kind: "gemini" | "veo"
       extras.push(extra("Billing unit", "Video generation uses requests/seconds; no fixed token balance"));
     if (kind === "gemini" && backend === "gemini")
       extras.push(extra("Input tokens", "Recent input-token usage and remaining are in the quota windows"));
-    const windows = quotas.flatMap((q) => quotaWindows(q.limit.series, q.usage.series, kind, now.getTime()));
+    const windows = quotas.flatMap((q) => quotaWindows(q.limit.series, q.usage.series, kind, now.getTime(), q.name));
     if (!windows.length) extras.push(extra("Quota remaining", "No matching recent quota samples"));
     const failures = all.filter((m) => m.status !== 200);
     if (failures.length)

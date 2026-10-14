@@ -206,8 +206,14 @@ main::-webkit-scrollbar-thumb {
   font-size: 12px;
 }
 .win .lbl .pct {
+  flex-shrink: 0;
   font-variant-numeric: tabular-nums;
   font-weight: 600;
+}
+.win .lbl > span:first-child {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  margin-right: 8px;
 }
 .win .lbl .reset {
   color: var(--muted);

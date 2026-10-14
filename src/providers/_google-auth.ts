@@ -14,7 +14,9 @@ export async function googleAuth(config: ProviderConfig) {
   const file =
     typeof config.serviceAccountFile === "string" && config.serviceAccountFile
       ? config.serviceAccountFile
-      : env.GOOGLE_APPLICATION_CREDENTIALS;
+      : !raw
+        ? env.GOOGLE_APPLICATION_CREDENTIALS
+        : undefined;
   if (file) {
     try {
       raw = fs.readFileSync(file, "utf8");

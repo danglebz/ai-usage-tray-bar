@@ -80,3 +80,22 @@ it("does not label an empty Monitoring result zero tokens", async () => {
     value: "No reported samples",
   });
 });
+
+it("collects all month token pages instead of silently undercounting", async () => {
+  vi.mocked(fetch).mockImplementation(async (url) => {
+    const request = new URL(String(url));
+    if (!request.searchParams.get("filter")?.includes("generate_content_usage_output_token_count"))
+      return Response.json({});
+    const next = request.searchParams.has("pageToken");
+    return Response.json({
+      timeSeries: [
+        {
+          metric: { labels: { model: "gemini-2.5-flash" } },
+          points: [{ value: { int64Value: next ? "3" : "5" }, interval: { endTime: new Date().toISOString() } }],
+        },
+      ],
+      ...(next ? {} : { nextPageToken: "next-page" }),
+    });
+  });
+  expect((await fetchGoogle({}, "gemini")).extras).toContainEqual({ label: "Month output tokens (UTC)", value: "8" });
+});

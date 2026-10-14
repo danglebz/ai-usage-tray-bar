@@ -16,7 +16,7 @@ it("signs only a Monitoring read token, uses Google's fixed endpoint, and caches
   };
   vi.stubEnv("GOOGLE_SERVICE_ACCOUNT_KEY", Buffer.from(JSON.stringify(key)).toString("base64"));
   vi.stubEnv("GOOGLE_CLOUD_PROJECT", "test-project");
-  vi.stubEnv("GOOGLE_APPLICATION_CREDENTIALS", "");
+  vi.stubEnv("GOOGLE_APPLICATION_CREDENTIALS", "this-unrelated-fallback-file-must-not-be-read.json");
   vi.stubGlobal(
     "fetch",
     vi.fn().mockImplementation(async () => Response.json({ access_token: "test-token", expires_in: 3600 })),
