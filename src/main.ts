@@ -211,6 +211,12 @@ async function debugScreenshot(file: string): Promise<void> {
     await popup.webContents.executeJavaScript("document.querySelector('#btnSettings').click()");
     await new Promise((r) => setTimeout(r, 500));
   }
+  const screenshotProvider = process.env.AI_USAGE_SCREENSHOT_PROVIDER;
+  if (screenshotProvider && providers.some((p) => p.id === screenshotProvider)) {
+    await popup.webContents.executeJavaScript(
+      `document.querySelector('[data-provider="${screenshotProvider}"]')?.scrollIntoView({block:"start"})`,
+    );
+  }
   const img = await popup.webContents.capturePage();
   fs.writeFileSync(file, img.toPNG());
   app.quit();

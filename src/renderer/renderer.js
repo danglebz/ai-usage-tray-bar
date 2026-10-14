@@ -93,7 +93,7 @@ function renderUsage() {
   let worst = "unknown";
   for (const r of state.results) {
     const tone = r.status === "ok" ? "" : r.status === "error" || r.status === "expired" ? "err" : "idle";
-    const card = el("div", { class: `card ${tone}` });
+    const card = el("div", { class: `card ${tone}`, "data-provider": r.id });
     const head = el("div", { class: "head" }, el("span", { class: "name", text: r.name }));
     if (r.plan) head.append(el("span", { class: "plan", text: r.plan }));
     if (r.source === "local") head.append(el("span", { class: "badge", text: "local" }));

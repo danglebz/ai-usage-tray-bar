@@ -4,7 +4,7 @@
 [![Latest release](https://img.shields.io/github/v/release/danglebz/ai-usage-tray-bar)](https://github.com/danglebz/ai-usage-tray-bar/releases/latest)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-A small Windows tray app that puts the remaining quota and credits of your AI coding tools in one place: Claude Code, Codex CLI, GitHub Copilot, Gemini CLI, OpenRouter, and the Anthropic / OpenAI pay-as-you-go APIs.
+A small Windows tray app that puts AI usage, quotas and credits in one place: Claude Code, Codex CLI, GitHub Copilot, Gemini CLI, Google Veo, Google Gemini, fal.ai, Claude Console, OpenRouter and OpenAI API.
 
 Click the tray icon for a panel with one card per provider — used percentage, time until the window resets, credits left — and get a Windows notification once a limit crosses a threshold you choose.
 
@@ -21,10 +21,29 @@ Click the tray icon for a panel with one card per provider — used percentage, 
 | **Codex CLI** (ChatGPT plan) | 5-hour %, weekly %, credits                                                                          | `~/.codex/auth.json`, written by Codex                     | Verified on a Free plan (single 30-day window); the Plus / Pro 5-hour + weekly pair has not been observed yet                                     |
 | **Gemini CLI**               | Quota per model family                                                                               | `~/.gemini/oauth_creds.json`                               | Untested; Google stopped serving this path for individual / AI Pro / Ultra accounts on 2026-06-18 (Workspace and Code Assist accounts still work) |
 | **OpenRouter**               | Credits left, per-key limit, daily / weekly / monthly spend                                          | API key entered in Settings                                | Official API                                                                                                                                      |
-| **Anthropic API**            | Month-to-date spend, optional budget bar                                                             | **Admin** API key (`sk-ant-admin01-…`) entered in Settings | Needs an organization in the Anthropic Console; individual accounts cannot create Admin keys                                                      |
+| **Claude Console**           | Month-to-date spend, optional budget bar                                                             | **Admin** API key (`sk-ant-admin01-…`) entered in Settings | Needs an organization in the Anthropic Console; individual accounts cannot create Admin keys                                                      |
 | **OpenAI API**               | Month-to-date spend, optional budget bar                                                             | **Admin** API key entered in Settings                      | Official API                                                                                                                                      |
 
 Every provider can be switched off in Settings. A provider that fails shows its error on its own card; the others keep working.
+
+### Google Veo, Google Gemini, fal.ai and Claude Console
+
+These are separate account monitors. They query provider APIs directly and never generate text, images or videos to measure usage. A project database is not needed. All report months below are UTC, as labelled in the cards.
+
+| Card           | Available figures                                                                                                   | Required access                                                                    |
+| -------------- | ------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| Google Veo     | Reported requests and recent matching quota usage/remaining; video is measured in requests/seconds                  | Google service account with Monitoring Viewer; select `vertex` or `gemini` backend |
+| Google Gemini  | Reported monthly output tokens (Gemini API), or monthly tokens (Vertex); recent input quota windows where published | Google service account with Monitoring Viewer                                      |
+| fal.ai         | Account credits remaining, monthly spend and model billing units                                                    | `BILLING` API key; `READONLY` can read credits only                                |
+| Claude Console | Monthly input/output tokens including cache reads/writes, and monthly spend                                         | Organization Admin API key with Usage & Cost access                                |
+
+In each card's Settings, an optional **Project env file** reads existing credentials without copying them into the tray config. Google reads `GOOGLE_SERVICE_ACCOUNT_KEY` (JSON or base64 JSON) and `GOOGLE_CLOUD_PROJECT`; alternatively choose a service-account JSON file. Select the Cloud project that owns the API usage you want to monitor. Veo can use `VEO_BACKEND`; Gemini defaults to its own API. fal.ai reads `FAL_KEY`; Claude Console reads `ANTHROPIC_ADMIN_KEY`. Explicit keys entered in Settings take precedence over the env file. The app does not change Google IAM roles or key permissions.
+
+Google quota percentages compare a reported one-minute usage sample only with its matching model, region, limit and period. Missing or stale usage produces an unknown percentage. Monitoring can lag actual requests and does not publish a billing-credit balance. Veo through the Gemini API reports the paid-tier-1 monthly request counter; other tiers can still show recent quota samples when published. See Google's [Gemini metrics](https://docs.cloud.google.com/monitoring/api/metrics_gcp_d_h) and [Vertex metrics](https://docs.cloud.google.com/monitoring/api/metrics_gcp_a_b).
+
+fal.ai's [billing endpoint](https://fal.ai/docs/platform-apis/v1/account/billing) exposes credits; its [usage endpoint](https://fal.ai/docs/platform-apis/v1/models/usage) requires more permissions. Generation-only keys can return 403. [Claude Console Usage & Cost](https://platform.claude.com/docs/en/manage-claude/usage-cost-api) does not expose purchased credit balance and may be unavailable to individual accounts. A local USD budget is labelled separately from actual provider credit. Missing permissions, incomplete reports and unknown balances are never presented as zero or unlimited.
+
+Probe these cards with `pnpm probe google-veo google-gemini fal anthropic-api`. Claude Console keeps the existing `anthropic-api` config ID so saved settings are retained.
 
 ## Install
 

@@ -16,6 +16,67 @@ export function demoResults(): ProviderResult[] {
   const fetchedAt = new Date().toISOString();
   return [
     {
+      id: "google-veo",
+      name: "Google Veo",
+      ms: 250,
+      status: "ok",
+      plan: "Vertex AI",
+      account: "demo-project",
+      windows: [
+        win("veo-3.1 · requests/min · global", 40, null, { detail: "4 used / 10 · 6 left in the reported minute" }),
+      ],
+      extras: [
+        { label: "Month requests (UTC)", value: "42" },
+        { label: "Credit balance", value: "Not exposed by Cloud Monitoring" },
+      ],
+      fetchedAt,
+    },
+    {
+      id: "google-gemini",
+      name: "Google Gemini",
+      ms: 280,
+      status: "ok",
+      plan: "Gemini API",
+      account: "demo-project",
+      windows: [
+        win("gemini-2.5-flash · tokens/min · paid 1", 12.5, null, {
+          detail: "25,000 used / 200,000 · 175,000 left in the reported minute",
+        }),
+      ],
+      extras: [
+        { label: "Month output tokens (UTC)", value: "65,000" },
+        { label: "Credit balance", value: "Not exposed by Cloud Monitoring" },
+      ],
+      fetchedAt,
+    },
+    {
+      id: "fal",
+      name: "fal.ai",
+      ms: 210,
+      status: "ok",
+      windows: [],
+      extras: [
+        { label: "Credits remaining", value: "$14.50" },
+        { label: "Month spend (UTC)", value: "$5.50" },
+        { label: "Month second", value: "24" },
+      ],
+      fetchedAt,
+    },
+    {
+      id: "anthropic-api",
+      name: "Claude Console",
+      ms: 300,
+      status: "ok",
+      windows: [],
+      extras: [
+        { label: "Month tokens (UTC)", value: "145,000" },
+        { label: "Input / output", value: "120,000 / 25,000" },
+        { label: "Month spend (UTC)", value: "$1.60" },
+        { label: "Console credits remaining", value: "Not exposed by the Usage & Cost API" },
+      ],
+      fetchedAt,
+    },
+    {
       id: "claude",
       name: "Claude Code",
       ms: 412,
