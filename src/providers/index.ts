@@ -6,10 +6,20 @@ import claude from "./claude.ts";
 import codex from "./codex.ts";
 import copilot from "./copilot.ts";
 import gemini from "./gemini.ts";
+import fal from "./fal.ts";
 import openaiApi from "./openai-api.ts";
 import openrouter from "./openrouter.ts";
 
-export const providers: readonly Provider[] = [claude, codex, copilot, gemini, openrouter, anthropicApi, openaiApi];
+export const providers: readonly Provider[] = [
+  claude,
+  codex,
+  copilot,
+  gemini,
+  fal,
+  openrouter,
+  anthropicApi,
+  openaiApi,
+];
 
 export const byId: Readonly<Record<string, Provider>> = Object.fromEntries(providers.map((p) => [p.id, p]));
 
