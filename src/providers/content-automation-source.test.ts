@@ -3,6 +3,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type * as Util from "./_util.ts";
 
 const h = vi.hoisted(() => ({
   query: vi.fn(),
@@ -23,6 +24,9 @@ vi.mock("node:module", () => ({
     },
   }),
 }));
+vi.mock("./_util.ts", async (original) => ({ ...(await original<typeof Util>()), fetchJson: vi.fn() }));
+
+import { fetchJson } from "./_util.ts";
 import { projectEnvironment, readProjectUsage, revealProjectKey } from "./content-automation-source.ts";
 
 let folder: string;
@@ -33,7 +37,6 @@ beforeEach(() => {
     "DATABASE_URL=postgres://u:secret@localhost/test\nFAL_KEY=test-fal",
   );
   vi.clearAllMocks();
-  vi.stubGlobal("fetch", vi.fn());
   h.connect.mockResolvedValue({ query: h.query, release: h.release });
   h.end.mockResolvedValue(undefined);
   h.query.mockImplementation(async (sql: string) => {
@@ -60,10 +63,7 @@ beforeEach(() => {
     return { rows: [] };
   });
 });
-afterEach(() => {
-  fs.rmSync(folder, { recursive: true, force: true });
-  vi.unstubAllGlobals();
-});
+afterEach(() => fs.rmSync(folder, { recursive: true, force: true }));
 
 describe("project usage reader", () => {
   it("uses a read-only connection/transaction and parameterized Bangkok month boundaries", async () => {
@@ -87,7 +87,7 @@ describe("project usage reader", () => {
     expect(result.providers.find((p) => p.id === "fal")?.configured).toBe(true);
     expect(result.latestActivity).toBe("2026-10-10T12:00:00.000Z");
     expect(JSON.stringify(result)).not.toContain("secret");
-    expect(fetch).not.toHaveBeenCalled();
+    expect(fetchJson).not.toHaveBeenCalled();
     expect(h.release).toHaveBeenCalledOnce();
     expect(h.end).toHaveBeenCalledOnce();
   });
@@ -147,9 +147,12 @@ describe("project usage reader", () => {
         ? [{ provider: "openrouter", is_configured: true, api_key: "test-or-key" }]
         : [],
     }));
-    vi.mocked(fetch).mockImplementation(async (url) =>
-      Response.json({ data: { limit_remaining: 4.5 } }, { status: String(url).endsWith("/key") ? 200 : 403 }),
-    );
+    vi.mocked(fetchJson).mockImplementation(async (url) => ({
+      ok: url.endsWith("/key"),
+      status: url.endsWith("/key") ? 200 : 403,
+      text: "",
+      json: { data: { limit_remaining: 4.5 } },
+    }));
     const result = await readProjectUsage(folder);
     expect(result.openrouter.accountRemainingUsd).toBeNull();
     expect(result.openrouter.keyRemainingUsd).toBe(4.5);
@@ -161,7 +164,7 @@ describe("project usage reader", () => {
     h.query.mockImplementation(async (sql: string) => ({
       rows: sql.includes("ai_provider_credentials_global") ? [{ provider: "openrouter", api_key: "key" }] : [],
     }));
-    vi.mocked(fetch).mockRejectedValue(new Error("Bearer key"));
+    vi.mocked(fetchJson).mockRejectedValue(new Error("Bearer key"));
     const result = await readProjectUsage(folder);
     expect(result.openrouter.note).toContain("unavailable");
     expect(result.openrouter.accountRemainingUsd).toBeNull();
