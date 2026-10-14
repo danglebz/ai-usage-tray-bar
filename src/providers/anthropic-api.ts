@@ -58,6 +58,18 @@ async function fetchUsage(config: ProviderConfig): Promise<Snapshot> {
       report(key, "usage_report/messages", end),
     ]);
     if (cost.status === "rejected" && usage.status === "rejected") {
+      const reportsDenied = [cost.reason, usage.reason].every(
+        (reason: unknown) => reason instanceof BillingConfigError && reason.message.includes("HTTP 403"),
+      );
+      if (reportsDenied) {
+        const account = await billingJson("https://api.anthropic.com/v1/organizations/me", {
+          headers: { "x-api-key": key, "anthropic-version": "2023-06-01" },
+        }).catch(() => null);
+        if (account?.ok && str(prop(account.json, "id")))
+          return snap.notConfigured(
+            "The Console key is valid, but this account cannot read Usage & Cost reports. Individual organizations do not support these reports. Check Organization settings and the linked account's report permissions.",
+          );
+      }
       const message =
         cost.reason instanceof BillingConfigError
           ? cost.reason.message

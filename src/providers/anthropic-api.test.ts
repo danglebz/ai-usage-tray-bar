@@ -60,6 +60,30 @@ it("explains Console permissions without returning rejected response bodies", as
   expect(JSON.stringify(result)).not.toContain("secret");
 });
 
+it("identifies a valid key when the account cannot access reports", async () => {
+  vi.mocked(fetch).mockImplementation(async (url) =>
+    String(url).endsWith("/organizations/me")
+      ? Response.json({ id: "org-test" })
+      : new Response("secret report error", { status: 403 }),
+  );
+  const result = await provider.fetch({ adminKey: "test" });
+  expect(result.status).toBe("not_configured");
+  expect(result.message).toContain("key is valid");
+  expect(result.message).toContain("Individual organizations");
+  expect(JSON.stringify(result)).not.toContain("secret");
+});
+
+it("retains the report permission error if account verification is unavailable", async () => {
+  vi.mocked(fetch).mockImplementation(async (url) => {
+    if (String(url).endsWith("/organizations/me")) throw new Error("secret network error");
+    return new Response("secret report error", { status: 403 });
+  });
+  const result = await provider.fetch({ adminKey: "test" });
+  expect(result.status).toBe("not_configured");
+  expect(result.message).toContain("HTTP 403");
+  expect(JSON.stringify(result)).not.toContain("secret");
+});
+
 it("reports a network outage as an error without revealing rejected headers", async () => {
   vi.mocked(fetch).mockRejectedValue(new Error("Invalid header: Bearer secret"));
   const result = await provider.fetch({ adminKey: "test" });
