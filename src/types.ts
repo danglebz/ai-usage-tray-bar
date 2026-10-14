@@ -96,6 +96,8 @@ export interface AppConfig {
   notifyAtPercent: number;
   /** Keep the panel open when it loses focus. Esc and ✕ still close it. */
   pinned: boolean;
+  /** User-chosen panel height in DIP; clamped to the current display when opened. */
+  popupHeight: number;
   providers: Record<string, ProviderConfig>;
 }
 

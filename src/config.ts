@@ -5,6 +5,7 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { DEFAULT_POPUP_HEIGHT } from "./popup.ts";
 import type { AppConfig } from "./types.ts";
 
 export const DEFAULTS: AppConfig = {
@@ -12,6 +13,7 @@ export const DEFAULTS: AppConfig = {
   openAtLogin: false,
   notifyAtPercent: 90,
   pinned: false,
+  popupHeight: DEFAULT_POPUP_HEIGHT,
   providers: {
     claude: { enabled: true },
     codex: { enabled: true },

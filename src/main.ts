@@ -19,11 +19,10 @@ import {
 import * as config from "./config.ts";
 import { demoResults } from "./demo.ts";
 import { ringIcon } from "./icon.ts";
+import { DEFAULT_POPUP_HEIGHT, popupLayout } from "./popup.ts";
 import { fetchAll, providers } from "./providers/index.ts";
 import type { AppConfig, ConfigPatch, PublicConfig, Severity, UsageState, UsageWindow } from "./types.ts";
 
-const POPUP_W = 400;
-const POPUP_H = 620;
 // Must match build.appId so packaged and unpackaged runs share one Windows identity.
 const AUMID = "local.ai-usage-tray";
 const APP_DIR = path.resolve(import.meta.dirname, "..");
@@ -107,12 +106,17 @@ function applyLoginItem(): void {
 }
 
 function createPopup(): void {
+  const layout = currentPopupLayout();
   popup = new BrowserWindow({
-    width: POPUP_W,
-    height: POPUP_H,
+    ...layout.bounds,
+    minWidth: layout.bounds.width,
+    maxWidth: layout.bounds.width,
+    minHeight: layout.minHeight,
+    maxHeight: layout.maxHeight,
     show: false,
     frame: false,
-    resizable: false,
+    resizable: true,
+    thickFrame: true,
     movable: false,
     minimizable: false,
     maximizable: false,
@@ -136,18 +140,37 @@ function createPopup(): void {
     e.preventDefault();
     popup.hide();
   });
+  popup.on("will-resize", (event, bounds) => {
+    const area = screen.getDisplayMatching(popup.getBounds()).workArea;
+    if (bounds.y < area.y || bounds.y + bounds.height > area.y + area.height) event.preventDefault();
+  });
+  // Windows emits this once a native edge drag ends, rather than for every pixel.
+  popup.on("resized", () => {
+    if (SCREENSHOT) return;
+    const height = popup.getBounds().height;
+    if (cfg.popupHeight === height) return;
+    cfg.popupHeight = height;
+    config.save(cfg);
+  });
+  screen.on("display-metrics-changed", () => {
+    if (popup.isVisible()) positionPopup();
+  });
+}
+
+function currentPopupLayout() {
+  const tb = tray.getBounds();
+  const display = screen.getDisplayNearestPoint({ x: tb.x, y: tb.y });
+  const height = SCREENSHOT ? Number(process.env.AI_USAGE_SCREENSHOT_HEIGHT) || DEFAULT_POPUP_HEIGHT : cfg.popupHeight;
+  return popupLayout(tb, display.workArea, height);
 }
 
 function positionPopup(): void {
-  const tb = tray.getBounds();
-  const display = screen.getDisplayNearestPoint({ x: tb.x, y: tb.y });
-  const wa = display.workArea;
-  // Taskbar at the bottom (the default): open above the tray icon; otherwise fall back to the corner.
-  let x = Math.round(tb.x + tb.width / 2 - POPUP_W / 2);
-  let y = tb.y >= wa.y + wa.height ? wa.y + wa.height - POPUP_H - 8 : Math.max(wa.y + 8, tb.y + tb.height + 8);
-  x = Math.max(wa.x + 8, Math.min(x, wa.x + wa.width - POPUP_W - 8));
-  y = Math.max(wa.y + 8, Math.min(y, wa.y + wa.height - POPUP_H - 8));
-  popup.setBounds({ x, y, width: POPUP_W, height: POPUP_H });
+  const layout = currentPopupLayout();
+  // Clear the old minimum before applying a potentially smaller display's maximum.
+  popup.setMinimumSize(0, 0);
+  popup.setMaximumSize(layout.bounds.width, layout.maxHeight);
+  popup.setMinimumSize(layout.bounds.width, layout.minHeight);
+  popup.setBounds(layout.bounds);
 }
 
 function showPopup(): void {
@@ -221,6 +244,16 @@ async function debugScreenshot(file: string): Promise<void> {
       })`,
     );
   }
+  if (process.env.AI_USAGE_DEBUG)
+    console.log(
+      "[popup]",
+      JSON.stringify({
+        resizable: popup.isResizable(),
+        size: popup.getSize(),
+        minimum: popup.getMinimumSize(),
+        maximum: popup.getMaximumSize(),
+      }),
+    );
   const img = await popup.webContents.capturePage();
   fs.writeFileSync(file, img.toPNG());
   app.quit();
