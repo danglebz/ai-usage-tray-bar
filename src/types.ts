@@ -30,6 +30,13 @@ export interface Extra {
   value: string;
 }
 
+/** Expandable per-service details inside a project card. */
+export interface UsageSection {
+  title: string;
+  summary: string;
+  extras: Extra[];
+}
+
 /** What `Provider.fetch` returns. Every constructor in `snap` fills the required fields. */
 export interface Snapshot {
   status: Status;
@@ -42,6 +49,7 @@ export interface Snapshot {
   source?: "api" | "local";
   windows: UsageWindow[];
   extras: Extra[];
+  sections?: UsageSection[];
   fetchedAt: string;
 }
 

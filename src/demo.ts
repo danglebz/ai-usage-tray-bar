@@ -4,6 +4,7 @@
 
 import type { ProviderResult } from "./types.ts";
 import { win } from "./providers/_util.ts";
+import { projectSnapshot } from "./providers/content-automation.ts";
 
 const HOUR = 3_600_000;
 const DAY = 24 * HOUR;
@@ -15,6 +16,70 @@ function fromNow(ms: number): string {
 export function demoResults(): ProviderResult[] {
   const fetchedAt = new Date().toISOString();
   return [
+    {
+      id: "content-automation",
+      name: "Content Automation",
+      ms: 520,
+      ...projectSnapshot({
+        month: "2026-10",
+        resetsAt: fromNow(15 * DAY),
+        environment: "Railway / main",
+        database: "remote",
+        databaseVariable: "DATABASE_URL",
+        latestActivity: fetchedAt,
+        providers: [
+          {
+            id: "openai",
+            configured: true,
+            month: {
+              calls: 32,
+              inputTokens: 240000,
+              outputTokens: 35000,
+              images: 8,
+              videoSeconds: 0,
+              estimatedCostUsd: 3.25,
+              unpricedCalls: 0,
+              unmeteredCalls: 0,
+            },
+            lifetime: {
+              calls: 90,
+              inputTokens: 920000,
+              outputTokens: 110000,
+              images: 24,
+              videoSeconds: 0,
+              estimatedCostUsd: 12.5,
+              unpricedCalls: 0,
+              unmeteredCalls: 0,
+            },
+          },
+          {
+            id: "openrouter",
+            configured: true,
+            month: {
+              calls: 15,
+              inputTokens: 80000,
+              outputTokens: 12000,
+              images: 3,
+              videoSeconds: 0,
+              estimatedCostUsd: 1.4,
+              unpricedCalls: 0,
+              unmeteredCalls: 0,
+            },
+            lifetime: {
+              calls: 15,
+              inputTokens: 80000,
+              outputTokens: 12000,
+              images: 3,
+              videoSeconds: 0,
+              estimatedCostUsd: 1.4,
+              unpricedCalls: 0,
+              unmeteredCalls: 0,
+            },
+          },
+        ],
+        openrouter: { accountRemainingUsd: 8.5, keyRemainingUsd: null, note: "Live OpenRouter credits (sample data)" },
+      }),
+    },
     {
       id: "claude",
       name: "Claude Code",

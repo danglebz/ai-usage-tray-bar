@@ -4,7 +4,7 @@ import { execFile } from "node:child_process";
 import fs from "node:fs";
 import { stripTypeScriptTypes } from "node:module";
 import path from "node:path";
-import type { ProjectUsage } from "./content-automation-source.ts";
+import { ProjectUsageError, type ProjectUsage } from "./content-automation-source.ts";
 
 export interface RailwaySource {
   projectPath: string;
@@ -28,9 +28,10 @@ export function railwayBinary(searchPath = process.env.PATH ?? ""): string | nul
 
 export async function readRailwayUsage(source: RailwaySource): Promise<ProjectUsage> {
   const binary = railwayBinary();
-  if (!binary) throw new Error("Install the Railway CLI and sign in to read deployed project usage.");
-  if (!path.isAbsolute(source.projectPath)) throw new Error("Choose the absolute Content Automation project folder.");
-  if (!source.environment || !source.service) throw new Error("Choose a Railway environment and service.");
+  if (!binary) throw new ProjectUsageError("Install the Railway CLI and sign in to read deployed project usage.");
+  if (!path.isAbsolute(source.projectPath))
+    throw new ProjectUsageError("Choose the absolute Content Automation project folder.");
+  if (!source.environment || !source.service) throw new ProjectUsageError("Choose a Railway environment and service.");
 
   const collector = stripTypeScriptTypes(
     fs.readFileSync(new URL("./content-automation-source.ts", import.meta.url), "utf8"),
@@ -53,7 +54,7 @@ export async function readRailwayUsage(source: RailwaySource): Promise<ProjectUs
           // connection details. Only recognize the setup issue observed on this machine.
           const noKey = stderr.includes("No registered SSH keys");
           reject(
-            new Error(
+            new ProjectUsageError(
               noKey
                 ? "Register this machine's SSH public key with Railway to read deployed usage."
                 : "Railway usage read failed. Check CLI login, SSH access, environment and service.",
@@ -66,7 +67,7 @@ export async function readRailwayUsage(source: RailwaySource): Promise<ProjectUs
           const line = stdout.trim().split(/\r?\n/).at(-1) ?? "";
           resolve(JSON.parse(line) as ProjectUsage);
         } catch {
-          reject(new Error("Railway returned no valid project usage report."));
+          reject(new ProjectUsageError("Railway returned no valid project usage report."));
         }
       },
     );

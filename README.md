@@ -26,6 +26,19 @@ Click the tray icon for a panel with one card per provider — used percentage, 
 
 Every provider can be switched off in Settings. A provider that fails shows its error on its own card; the others keep working.
 
+### Content Automation project
+
+Enable **Content Automation** in Settings and choose its local project folder. The project card shows month-to-date and all-time recorded tokens, input/output counts, estimated spend, image/video usage, and expandable details for every configured or historical provider. Reporting months use **Asia/Bangkok**. Calls with missing token counts or unknown prices are identified explicitly; the ledger is best-effort accounting, not a provider invoice.
+
+Choose one source:
+
+- **Deployed Railway app:** fill in the environment (for example `main`) and web service (default `Frontend`). The CLI uses the Railway project linked to that folder, or an explicit project ID. Install/sign in to the Railway CLI and register your machine's SSH public key using `railway ssh keys add`. The collector runs inside the web service and sends back only aggregate usage. It creates no deployment or public database proxy, and provider/database secrets stay on the server.
+- **Local environment:** leave Railway environment blank and select an env filename (default `.env.local`; use `.env.development.local` for development). The selected file overrides `.env.local` and `.env`; the tray process's environment is ignored. The reader uses `DATABASE_URL`, or the legacy `SUPABASE_DB_URL` fallback, and loads `pg` from the project's installed dependencies. The database must be reachable from this machine.
+
+Both sources use a **read-only database connection and transaction**, with connection/query timeouts. No generation, storage write, job sweep or migration is invoked. A normal OpenRouter key can expose its key limit via [`/key`](https://openrouter.ai/docs/api/api-reference/api-keys/get-current-api-key); account credit access via [`/credits`](https://openrouter.ai/docs/api/api-reference/credits/get-remaining-credits) can require a management key. These USD figures are kept separate. Other services display remaining tokens/credits as unavailable with the project's inference credentials; a missing limit is never treated as zero or unlimited. OpenAI organization billing/usage requires separate [Admin API credentials](https://developers.openai.com/api/docs/guides/admin-apis), which this connector does not request or copy.
+
+An optional local monthly USD budget draws an estimated planning bar. Its remaining amount is not provider credit, and no remaining amount is calculated when some calls have unknown prices. Probe just this source with `pnpm probe content-automation`.
+
 ## Install
 
 ### Portable exe
