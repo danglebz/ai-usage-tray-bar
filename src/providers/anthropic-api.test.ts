@@ -22,7 +22,7 @@ it("includes all cache tokens and converts cents while keeping Console credit un
   vi.mocked(fetch).mockImplementation(async (url) => Response.json(String(url).includes("cost_report") ? cost : usage));
   const result = await provider.fetch({ adminKey: "test", monthlyBudget: 5, envFile: "C:/missing/.env" });
   expect(result.extras).toContainEqual({ label: "Month tokens (UTC)", value: "165" });
-  expect(result.extras).toContainEqual({ label: "Month spend (UTC)", value: "$1.25" });
+  expect(result.windows[0]?.detail).toBe("$1.25 / $5.00 · $3.75 left");
   expect(result.extras).toContainEqual({
     label: "Console credits remaining",
     value: "Not exposed by the Usage & Cost API",
@@ -47,10 +47,7 @@ it("fetches all cost pages", async () => {
           : { ...cost, has_more: true, next_page: "next" },
     ),
   );
-  expect((await provider.fetch({ adminKey: "test" })).extras).toContainEqual({
-    label: "Month spend (UTC)",
-    value: "$2.50",
-  });
+  expect((await provider.fetch({ adminKey: "test" })).windows[0]?.detail).toContain("$2.50 used");
 });
 it("explains Console permissions without returning rejected response bodies", async () => {
   vi.mocked(fetch).mockImplementation(async () => new Response("secret", { status: 403 }));
@@ -70,6 +67,8 @@ it("identifies a valid key when the account cannot access reports", async () => 
   expect(result.status).toBe("not_configured");
   expect(result.message).toContain("key is valid");
   expect(result.message).toContain("Individual organizations");
+  expect(result.windows[0]?.percent).toBeNull();
+  expect(result.windows[0]?.detail).toContain("Usage not reported");
   expect(JSON.stringify(result)).not.toContain("secret");
 });
 
@@ -91,12 +90,12 @@ it("reports a network outage as an error without revealing rejected headers", as
   expect(JSON.stringify(result)).not.toContain("secret");
 });
 
-it("keeps tokens but withholds an incomplete cost total and its budget bar", async () => {
+it("keeps tokens but leaves the budget percentage unknown for an incomplete cost total", async () => {
   vi.mocked(fetch).mockImplementation(async (url) =>
     Response.json(String(url).includes("cost_report") ? { ...cost, has_more: true } : usage),
   );
   const result = await provider.fetch({ adminKey: "test", monthlyBudget: 10 });
   expect(result.status).toBe("ok");
-  expect(result.windows).toEqual([]);
-  expect(result.extras).toContainEqual({ label: "Month spend", value: "Unavailable; report access failed" });
+  expect(result.windows[0]?.percent).toBeNull();
+  expect(result.windows[0]?.detail).toBe("Usage not reported · Target $10.00");
 });

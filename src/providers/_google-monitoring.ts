@@ -4,6 +4,7 @@
 import type { Extra, Provider, ProviderConfig, Snapshot, UsageWindow } from "../types.ts";
 import { BillingConfigError, billingJson } from "./_billing.ts";
 import { googleAuth } from "./_google-auth.ts";
+import { monthlyProgress } from "./_progress.ts";
 import { extra, isObject, monthStart, prop, snap, str, win } from "./_util.ts";
 
 interface Point {
@@ -187,16 +188,12 @@ export async function fetchGoogle(config: ProviderConfig, kind: "gemini" | "veo"
         : backend === "vertex"
           ? "Month tokens (UTC)"
           : "Month output tokens (UTC)";
-    const extras: Extra[] = [
-      extra(label, matching.some((s) => s.points.length) ? count(total) : "No reported samples"),
-      extra("Credit balance", "Not exposed by Cloud Monitoring"),
-    ];
-    if (kind === "veo")
-      extras.push(extra("Billing unit", "Video generation uses requests/seconds; no fixed token balance"));
-    if (kind === "gemini" && backend === "gemini")
-      extras.push(extra("Input tokens", "Recent input-token usage and remaining are in the quota windows"));
-    const windows = quotas.flatMap((q) => quotaWindows(q.limit.series, q.usage.series, kind, now.getTime(), q.name));
-    if (!windows.length) extras.push(extra("Quota remaining", "No matching recent quota samples"));
+    const reportedTotal = matching.some((s) => s.points.length) ? total : null;
+    const extras: Extra[] = [extra("Credit balance", "Not exposed by Cloud Monitoring")];
+    if (kind === "veo") extras.push(extra("Billing unit", "video requests/seconds"));
+    const quota = quotas.flatMap((q) => quotaWindows(q.limit.series, q.usage.series, kind, now.getTime(), q.name));
+    const windows = [monthlyProgress(label, reportedTotal, config.monthlyUsageTarget), ...quota];
+    if (!quota.length) extras.push(extra("Provider quota", "No matching recent quota samples"));
     const failures = all.filter((m) => m.status !== 200);
     if (failures.length)
       extras.push(extra("Monitoring coverage", `${failures.length} metrics unavailable; no values inferred`));
@@ -205,7 +202,7 @@ export async function fetchGoogle(config: ProviderConfig, kind: "gemini" | "veo"
       plan: backend === "vertex" ? "Vertex AI" : "Gemini API",
       windows,
       extras,
-      message: "Reported usage and quota windows can lag. These figures are separate from Google billing credits.",
+      message: "Provider usage and quota reports may be delayed.",
     });
   } catch (error) {
     return snap.error(
@@ -248,6 +245,16 @@ export function googleProvider(kind: "gemini" | "veo"): Provider {
         key: "backend",
         label: "API backend — gemini or vertex",
         placeholder: kind === "veo" ? "vertex" : "gemini",
+        secret: false,
+      },
+      {
+        key: "monthlyUsageTarget",
+        label: kind === "veo" ? "Monthly request target" : "Monthly token target",
+        placeholder: kind === "veo" ? "10000" : "1000000",
+        help:
+          kind === "veo"
+            ? "Local request target, not a provider quota or billing limit. Resets monthly in UTC."
+            : "Local token target, not a provider quota or billing limit. Gemini API counts output tokens; Vertex counts reported tokens. Resets monthly in UTC.",
         secret: false,
       },
     ],

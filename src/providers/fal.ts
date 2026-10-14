@@ -3,7 +3,8 @@
 // https://fal.ai/docs/platform-apis/v1/models/usage (paged, BILLING preset).
 import type { Extra, Provider, ProviderConfig, Snapshot } from "../types.ts";
 import { BillingConfigError, billingEnvironment, billingJson } from "./_billing.ts";
-import { extra, isObject, monthStart, num, prop, snap, str, usd, win } from "./_util.ts";
+import { monthlyProgress } from "./_progress.ts";
+import { extra, isObject, monthStart, num, prop, snap, str, usd } from "./_util.ts";
 
 async function monthlyUsage(key: string): Promise<{ spend: number; units: Map<string, number> }> {
   const url = new URL("https://api.fal.ai/v1/models/usage");
@@ -82,19 +83,11 @@ async function fetchUsage(config: ProviderConfig): Promise<Snapshot> {
             : `${balance} ${currency ?? "(unknown currency)"}`,
       ),
     ];
-    const windows = [];
+    const windows = [monthlyProgress("Month spend (UTC)", usage.value?.spend ?? null, config.monthlyBudget, usd)];
     if (usage.value) {
-      extras.push(extra("Month spend (UTC)", usd(usage.value.spend)));
       for (const [unit, quantity] of usage.value.units)
         extras.push(extra(`Month ${unit}`, quantity.toLocaleString("en-US")));
-      const budget = Number(config.monthlyBudget);
-      if (Number.isFinite(budget) && budget > 0)
-        windows.push(
-          win("Local monthly budget", (usage.value.spend / budget) * 100, null, {
-            detail: `${usd(Math.max(0, budget - usage.value.spend))} local budget left; separate from credits`,
-          }),
-        );
-    } else extras.push(extra("Month spend", "Unavailable"));
+    }
     return snap.ok({
       account: billing?.ok ? str(prop(billing.json, "username")) : null,
       windows,
@@ -127,7 +120,13 @@ const provider: Provider = {
       docUrl: "https://fal.ai/dashboard/keys",
       docLabel: "Create key",
     },
-    { key: "monthlyBudget", label: "Local monthly USD budget — optional", placeholder: "50", secret: false },
+    {
+      key: "monthlyBudget",
+      label: "Monthly spend target (USD)",
+      help: "Local progress target, separate from account credits. Does not change billing or spending limits.",
+      placeholder: "10",
+      secret: false,
+    },
   ],
 };
 export default provider;

@@ -2,7 +2,8 @@
 // https://platform.claude.com/docs/en/manage-claude/usage-cost-api
 import type { Extra, Provider, ProviderConfig, Snapshot } from "../types.ts";
 import { BillingConfigError, billingEnvironment, billingJson } from "./_billing.ts";
-import { extra, isObject, monthStart, prop, snap, str, usd, win } from "./_util.ts";
+import { monthlyProgress } from "./_progress.ts";
+import { extra, isObject, monthStart, prop, snap, str, usd } from "./_util.ts";
 
 async function report(key: string, endpoint: string, end: string): Promise<unknown[]> {
   const url = new URL(`https://api.anthropic.com/v1/organizations/${endpoint}`);
@@ -68,6 +69,7 @@ async function fetchUsage(config: ProviderConfig): Promise<Snapshot> {
         if (account?.ok && str(prop(account.json, "id")))
           return snap.notConfigured(
             "The Console key is valid, but this account cannot read Usage & Cost reports. Individual organizations do not support these reports. Check Organization settings and the linked account's report permissions.",
+            { windows: [monthlyProgress("Month spend (UTC)", null, config.monthlyBudget, usd)] },
           );
       }
       const message =
@@ -77,7 +79,7 @@ async function fetchUsage(config: ProviderConfig): Promise<Snapshot> {
       return /HTTP (401|403)/.test(message) ? snap.notConfigured(message) : snap.error(message);
     }
     const extras: Extra[] = [];
-    const windows = [];
+    let spend: number | null = null;
     if (usage.status === "fulfilled") {
       let input = 0,
         output = 0,
@@ -99,19 +101,11 @@ async function fetchUsage(config: ProviderConfig): Promise<Snapshot> {
       );
     } else extras.push(extra("Month tokens", "Unavailable; report access failed"));
     if (cost.status === "fulfilled") {
-      const spend = cost.value.reduce<number>((sum, row) => sum + number(prop(row, "amount")) / 100, 0);
-      extras.push(extra("Month spend (UTC)", usd(spend)));
-      const budget = Number(config.monthlyBudget);
-      if (Number.isFinite(budget) && budget > 0)
-        windows.push(
-          win("Local monthly budget", (spend / budget) * 100, null, {
-            detail: `${usd(Math.max(0, budget - spend))} local budget left; separate from Console credits`,
-          }),
-        );
-    } else extras.push(extra("Month spend", "Unavailable; report access failed"));
+      spend = cost.value.reduce<number>((sum, row) => sum + number(prop(row, "amount")) / 100, 0);
+    }
     extras.push(extra("Console credits remaining", "Not exposed by the Usage & Cost API"));
     return snap.ok({
-      windows,
+      windows: [monthlyProgress("Month spend (UTC)", spend, config.monthlyBudget, usd)],
       extras,
       message:
         cost.status === "rejected" || usage.status === "rejected"
@@ -140,7 +134,13 @@ const provider: Provider = {
       docLabel: "Create key",
       secret: true,
     },
-    { key: "monthlyBudget", label: "Local monthly USD budget — optional", placeholder: "50", secret: false },
+    {
+      key: "monthlyBudget",
+      label: "Monthly spend target (USD)",
+      help: "Local progress target, separate from Console credits. Does not change billing or spending limits.",
+      placeholder: "50",
+      secret: false,
+    },
   ],
 };
 export default provider;

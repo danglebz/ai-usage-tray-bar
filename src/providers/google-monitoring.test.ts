@@ -66,8 +66,10 @@ it("reads Vertex Veo request counts without generating videos", async () => {
         : {},
     );
   });
-  const result = await fetchGoogle({ backend: "vertex" }, "veo");
-  expect(result.extras).toContainEqual({ label: "Month requests (UTC)", value: "7" });
+  const result = await fetchGoogle({ backend: "vertex", monthlyUsageTarget: 10 }, "veo");
+  expect(result.windows[0]?.label).toContain("local target");
+  expect(result.windows[0]?.percent).toBe(70);
+  expect(result.windows[0]?.detail).toBe("7 / 10 · 3 left");
   expect(result.extras.find((x) => x.label === "Billing unit")?.value).toContain("requests/seconds");
   expect(
     vi.mocked(fetch).mock.calls.every(([url]) => String(url).startsWith("https://monitoring.googleapis.com/")),
@@ -75,10 +77,9 @@ it("reads Vertex Veo request counts without generating videos", async () => {
 });
 it("does not label an empty Monitoring result zero tokens", async () => {
   vi.mocked(fetch).mockImplementation(async () => Response.json({}));
-  expect((await fetchGoogle({}, "gemini")).extras).toContainEqual({
-    label: "Month output tokens (UTC)",
-    value: "No reported samples",
-  });
+  const result = await fetchGoogle({ monthlyUsageTarget: 1000000 }, "gemini");
+  expect(result.windows[0]?.percent).toBeNull();
+  expect(result.windows[0]?.detail).toBe("Usage not reported · Target 1,000,000");
 });
 
 it("collects all month token pages instead of silently undercounting", async () => {
@@ -97,5 +98,5 @@ it("collects all month token pages instead of silently undercounting", async () 
       ...(next ? {} : { nextPageToken: "next-page" }),
     });
   });
-  expect((await fetchGoogle({}, "gemini")).extras).toContainEqual({ label: "Month output tokens (UTC)", value: "8" });
+  expect((await fetchGoogle({}, "gemini")).windows[0]?.detail).toContain("8 used");
 });

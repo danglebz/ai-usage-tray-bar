@@ -17,7 +17,8 @@ it("shows real credits and billing units, without labelling a budget as provider
   expect(result.extras).toContainEqual({ label: "Credits remaining", value: "$12.50" });
   expect(result.extras).toContainEqual({ label: "Month second", value: "8" });
   expect(result.windows[0]?.percent).toBe(20);
-  expect(result.windows[0]?.detail).toContain("separate from credits");
+  expect(result.windows[0]?.label).toContain("local target");
+  expect(result.windows[0]?.detail).toBe("$2.00 / $10.00 · $8.00 left");
   expect(fetch).toHaveBeenCalledWith(
     expect.stringContaining("expand=credits"),
     expect.objectContaining({ headers: expect.objectContaining({ Authorization: "Key test-key" }), redirect: "error" }),
@@ -33,7 +34,7 @@ it("fetches all usage pages before showing a month total", async () => {
           : { ...usage, has_more: true, next_cursor: "second" },
     ),
   );
-  expect((await provider.fetch(key)).extras).toContainEqual({ label: "Month spend (UTC)", value: "$4.00" });
+  expect((await provider.fetch(key)).windows[0]?.detail).toContain("$4.00 used");
 });
 it("keeps a valid credit balance when a READONLY key cannot read spend", async () => {
   vi.mocked(fetch).mockImplementation(async (url) =>
@@ -42,7 +43,8 @@ it("keeps a valid credit balance when a READONLY key cannot read spend", async (
   const result = await provider.fetch(key);
   expect(result.status).toBe("ok");
   expect(result.message).toContain("BILLING");
-  expect(result.extras).toContainEqual({ label: "Month spend", value: "Unavailable" });
+  expect(result.windows[0]?.percent).toBeNull();
+  expect(result.windows[0]?.detail).toContain("Usage not reported");
 });
 it("explains inference-only permissions without echoing the API error body", async () => {
   vi.mocked(fetch).mockResolvedValue(new Response("secret", { status: 403 }));
@@ -56,7 +58,8 @@ it("does not show partial or malformed reports as zero spend", async () => {
     Response.json(String(url).includes("account/billing") ? bill : {}),
   );
   const result = await provider.fetch(key);
-  expect(result.extras).toContainEqual({ label: "Month spend", value: "Unavailable" });
+  expect(result.windows[0]?.percent).toBeNull();
+  expect(result.windows[0]?.detail).toContain("Usage not reported");
   expect(result.message).toContain("invalid");
 });
 it("hides credential-bearing network exceptions", async () => {
