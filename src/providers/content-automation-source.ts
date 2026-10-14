@@ -6,7 +6,28 @@ import fs from "node:fs";
 import { createRequire } from "node:module";
 import path from "node:path";
 import { parseEnv } from "node:util";
-import { fetchJson, isObject, num, prop } from "./_util.ts";
+// Keep this module dependent only on Node built-ins: the same reader can run inside
+// Railway without installing the tray app or transferring database credentials to it.
+function isObject(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+function prop(value: unknown, key: string): unknown {
+  return isObject(value) ? value[key] : undefined;
+}
+function num(value: unknown): number | null {
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+async function fetchJson(url: string, options: { headers: Record<string, string>; timeoutMs: number }) {
+  const response = await fetch(url, {
+    headers: options.headers,
+    signal: AbortSignal.timeout(options.timeoutMs),
+    redirect: "error",
+  });
+  // Refused responses can echo credentials; don't read them.
+  const json: unknown = response.ok ? await response.json() : null;
+  if (!response.ok) await response.body?.cancel();
+  return { ok: response.ok, status: response.status, json };
+}
 
 export interface UsageTotals {
   calls: number;
@@ -135,9 +156,10 @@ export async function readProjectUsage(
   folder: string,
   envFile = ".env.local",
   now = new Date(),
+  runtimeEnv?: Record<string, string | undefined>,
 ): Promise<ProjectUsage> {
   if (!path.isAbsolute(folder)) throw new Error("Choose the absolute Content Automation project folder.");
-  const env = projectEnvironment(folder, envFile);
+  const env = runtimeEnv ?? projectEnvironment(folder, envFile);
   const databaseVariable = env.DATABASE_URL ? "DATABASE_URL" : "SUPABASE_DB_URL";
   const connectionString = env[databaseVariable];
   if (!connectionString) throw new Error("No DATABASE_URL or SUPABASE_DB_URL in the selected project environment.");
