@@ -13,7 +13,6 @@ export const DEFAULTS: AppConfig = {
   notifyAtPercent: 90,
   pinned: false,
   providers: {
-    "content-automation": { enabled: false },
     claude: { enabled: true },
     codex: { enabled: true },
     copilot: { enabled: true },

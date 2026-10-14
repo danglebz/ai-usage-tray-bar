@@ -255,27 +255,6 @@ main::-webkit-scrollbar-thumb {
   font-weight: 500;
 }
 
-.usage-section {
-  border-top: 1px solid var(--card-border);
-  margin-top: 10px;
-  padding-top: 8px;
-}
-.usage-section summary {
-  cursor: pointer;
-  font-weight: 600;
-}
-.usage-section summary small {
-  display: block;
-  margin: 3px 0 0 14px;
-  color: var(--muted);
-  font-weight: 400;
-  overflow-wrap: anywhere;
-}
-.usage-section .extras {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-}
-
 .empty {
   color: var(--muted);
   text-align: center;

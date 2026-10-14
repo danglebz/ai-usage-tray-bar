@@ -40,9 +40,6 @@ export interface UsageTotals {
   unmeteredCalls: number;
 }
 
-/** Only fixed, credential-free messages from the readers may reach the panel. */
-export class ProjectUsageError extends Error {}
-
 export interface ProjectUsage {
   month: string;
   resetsAt: string;
@@ -100,7 +97,7 @@ function totals(row: Record<string, unknown>, prefix: string): UsageTotals {
 // the tray process. The selected file wins over .env.local and .env, like the app launcher.
 export function projectEnvironment(folder: string, filename: string): Record<string, string> {
   if (!/^\.env(?:\.[a-zA-Z0-9_-]+)*$/.test(filename))
-    throw new ProjectUsageError("Choose an .env filename inside the project folder.");
+    throw new Error("Choose an .env filename inside the project folder.");
   const env: Record<string, string> = {};
   for (const name of [".env", ".env.local"].filter((name) => name !== filename).concat(filename)) {
     const file = path.join(folder, name);
@@ -108,7 +105,7 @@ export function projectEnvironment(folder: string, filename: string): Record<str
     try {
       Object.assign(env, parseEnv(fs.readFileSync(file, "utf8")));
     } catch {
-      throw new ProjectUsageError("Could not read the project's selected env file.");
+      throw new Error("Could not read the project's selected env file.");
     }
   }
   return env;
@@ -161,12 +158,11 @@ export async function readProjectUsage(
   now = new Date(),
   runtimeEnv?: Record<string, string | undefined>,
 ): Promise<ProjectUsage> {
-  if (!path.isAbsolute(folder)) throw new ProjectUsageError("Choose the absolute Content Automation project folder.");
+  if (!path.isAbsolute(folder)) throw new Error("Choose the absolute Content Automation project folder.");
   const env = runtimeEnv ?? projectEnvironment(folder, envFile);
   const databaseVariable = env.DATABASE_URL ? "DATABASE_URL" : "SUPABASE_DB_URL";
   const connectionString = env[databaseVariable];
-  if (!connectionString)
-    throw new ProjectUsageError("No DATABASE_URL or SUPABASE_DB_URL in the selected project environment.");
+  if (!connectionString) throw new Error("No DATABASE_URL or SUPABASE_DB_URL in the selected project environment.");
   let database: "local" | "remote";
   try {
     const url = new URL(connectionString);
@@ -174,13 +170,13 @@ export async function readProjectUsage(
     const host = url.searchParams.getAll("host").at(-1) || url.hostname;
     database = ["localhost", "127.0.0.1", "[::1]", "::1"].includes(host) ? "local" : "remote";
   } catch {
-    throw new ProjectUsageError("The project's database connection URL is invalid.");
+    throw new Error("The project's database connection URL is invalid.");
   }
   let pg: PgModule;
   try {
     pg = createRequire(path.join(folder, "package.json"))("pg") as PgModule;
   } catch {
-    throw new ProjectUsageError("Install Content Automation's dependencies so the tray can load its pg client.");
+    throw new Error("Install Content Automation's dependencies so the tray can load its pg client.");
   }
 
   // Reporting months follow the project's Asia/Bangkok report, not the host's timezone.
@@ -252,8 +248,8 @@ export async function readProjectUsage(
       /^(?:[0-9A-Z]{5}|ECONNREFUSED|ENOTFOUND|ENETUNREACH|EHOSTUNREACH|ETIMEDOUT)$/.test(error.code)
         ? ` (${error.code})`
         : "";
-    // pg's cause may contain credentials; expose only the fixed code and message.
-    throw new ProjectUsageError(
+    // eslint-disable-next-line preserve-caught-error -- pg's cause may contain credentials; expose only the code.
+    throw new Error(
       `Could not read Content Automation's database${code}. Check the selected environment and database connectivity.`,
     );
   } finally {

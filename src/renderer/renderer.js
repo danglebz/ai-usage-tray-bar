@@ -130,14 +130,6 @@ function renderUsage() {
       for (const x of r.extras) ex.append(el("span", {}, `${x.label}: `, el("b", { text: x.value })));
       card.append(ex);
     }
-    for (const section of r.sections ?? []) {
-      const details = el("details", { class: "usage-section" });
-      details.append(el("summary", {}, el("span", { text: section.title }), el("small", { text: section.summary })));
-      const values = el("div", { class: "extras" });
-      for (const x of section.extras) values.append(el("span", {}, `${x.label}: `, el("b", { text: x.value })));
-      details.append(values);
-      card.append(details);
-    }
     viewUsage.append(card);
   }
   $("#headDot").className = `dot ${worst}`;
