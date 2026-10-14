@@ -59,7 +59,7 @@ async function fetchUsage(config: ProviderConfig): Promise<Snapshot> {
         cost.reason instanceof BillingConfigError
           ? cost.reason.message
           : "Could not read Claude Console. Check credentials and connectivity.";
-      return snap.notConfigured(message);
+      return /HTTP (401|403)/.test(message) ? snap.notConfigured(message) : snap.error(message);
     }
     const extras: Extra[] = [];
     const windows = [];

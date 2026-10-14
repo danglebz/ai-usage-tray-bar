@@ -59,3 +59,20 @@ it("explains Console permissions without returning rejected response bodies", as
   expect(result.message).toContain("organization");
   expect(JSON.stringify(result)).not.toContain("secret");
 });
+
+it("reports a network outage as an error without revealing rejected headers", async () => {
+  vi.mocked(fetch).mockRejectedValue(new Error("Invalid header: Bearer secret"));
+  const result = await provider.fetch({ adminKey: "test" });
+  expect(result.status).toBe("error");
+  expect(JSON.stringify(result)).not.toContain("secret");
+});
+
+it("keeps tokens but withholds an incomplete cost total and its budget bar", async () => {
+  vi.mocked(fetch).mockImplementation(async (url) =>
+    Response.json(String(url).includes("cost_report") ? { ...cost, has_more: true } : usage),
+  );
+  const result = await provider.fetch({ adminKey: "test", monthlyBudget: 10 });
+  expect(result.status).toBe("ok");
+  expect(result.windows).toEqual([]);
+  expect(result.extras).toContainEqual({ label: "Month spend", value: "Unavailable; report access failed" });
+});
