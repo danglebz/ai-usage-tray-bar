@@ -7,6 +7,8 @@ import codex from "./codex.ts";
 import copilot from "./copilot.ts";
 import gemini from "./gemini.ts";
 import fal from "./fal.ts";
+import googleGemini from "./google-gemini.ts";
+import googleVeo from "./google-veo.ts";
 import openaiApi from "./openai-api.ts";
 import openrouter from "./openrouter.ts";
 
@@ -15,6 +17,8 @@ export const providers: readonly Provider[] = [
   codex,
   copilot,
   gemini,
+  googleVeo,
+  googleGemini,
   fal,
   openrouter,
   anthropicApi,

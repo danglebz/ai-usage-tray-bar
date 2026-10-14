@@ -18,6 +18,8 @@ export const DEFAULTS: AppConfig = {
     copilot: { enabled: true },
     gemini: { enabled: true },
     fal: { enabled: true },
+    "google-veo": { enabled: true },
+    "google-gemini": { enabled: true },
     openrouter: { enabled: true },
     "anthropic-api": { enabled: true },
     "openai-api": { enabled: true },
