@@ -3,7 +3,8 @@
 // working on the panel without being logged in to anything.
 
 import type { ProviderResult } from "./types.ts";
-import { win } from "./providers/_util.ts";
+import { monthlyProgress } from "./providers/_progress.ts";
+import { usd, win } from "./providers/_util.ts";
 
 const HOUR = 3_600_000;
 const DAY = 24 * HOUR;
@@ -23,12 +24,10 @@ export function demoResults(): ProviderResult[] {
       plan: "Vertex AI",
       account: "demo-project",
       windows: [
+        monthlyProgress("Month requests (UTC)", 4200, 10000),
         win("veo-3.1 · requests/min · global", 40, null, { detail: "4 used / 10 · 6 left in the reported minute" }),
       ],
-      extras: [
-        { label: "Month requests (UTC)", value: "42" },
-        { label: "Credit balance", value: "Not exposed by Cloud Monitoring" },
-      ],
+      extras: [{ label: "Credit balance", value: "Not exposed by Cloud Monitoring" }],
       fetchedAt,
     },
     {
@@ -39,14 +38,12 @@ export function demoResults(): ProviderResult[] {
       plan: "Gemini API",
       account: "demo-project",
       windows: [
+        monthlyProgress("Month output tokens (UTC)", 296000, 1000000),
         win("gemini-2.5-flash · tokens/min · paid 1", 12.5, null, {
           detail: "25,000 used / 200,000 · 175,000 left in the reported minute",
         }),
       ],
-      extras: [
-        { label: "Month output tokens (UTC)", value: "65,000" },
-        { label: "Credit balance", value: "Not exposed by Cloud Monitoring" },
-      ],
+      extras: [{ label: "Credit balance", value: "Not exposed by Cloud Monitoring" }],
       fetchedAt,
     },
     {
@@ -54,10 +51,9 @@ export function demoResults(): ProviderResult[] {
       name: "fal.ai",
       ms: 210,
       status: "ok",
-      windows: [],
+      windows: [monthlyProgress("Month spend (UTC)", 5.5, 20, usd)],
       extras: [
         { label: "Credits remaining", value: "$14.50" },
-        { label: "Month spend (UTC)", value: "$5.50" },
         { label: "Month second", value: "24" },
       ],
       fetchedAt,
@@ -67,11 +63,10 @@ export function demoResults(): ProviderResult[] {
       name: "Claude Console",
       ms: 300,
       status: "ok",
-      windows: [],
+      windows: [monthlyProgress("Month spend (UTC)", 1.6, 10, usd)],
       extras: [
         { label: "Month tokens (UTC)", value: "145,000" },
         { label: "Input / output", value: "120,000 / 25,000" },
-        { label: "Month spend (UTC)", value: "$1.60" },
         { label: "Console credits remaining", value: "Not exposed by the Usage & Cost API" },
       ],
       fetchedAt,

@@ -102,13 +102,11 @@ function renderUsage() {
 
     if (r.status !== "ok") {
       card.append(el("div", { class: "status", text: `${STATUS_TEXT[r.status] ?? r.status}: ${r.message ?? ""}` }));
-    } else if (r.message) {
-      card.append(el("div", { class: "status", text: r.message }));
     }
 
     for (const w of r.windows) {
       if (RANK[w.severity] > RANK[worst]) worst = w.severity;
-      const pctText = w.percent == null ? "?" : `${Math.round(w.percent)}%`;
+      const pctText = w.percent == null ? "—" : `${Math.round(w.percent)}%`;
       const row = el(
         "div",
         { class: "win" },
@@ -119,7 +117,19 @@ function renderUsage() {
           el("span", { class: "reset", text: relReset(w.resetsAt) }),
           el("span", { class: "pct", text: pctText }),
         ),
-        el("div", { class: `bar ${w.severity}` }, el("i", { style: { width: `${w.percent ?? 0}%` } })),
+        el(
+          "div",
+          {
+            class: `bar ${w.severity}`,
+            role: "progressbar",
+            "aria-label": w.label,
+            "aria-valuemin": "0",
+            "aria-valuemax": "100",
+            ...(w.percent == null ? {} : { "aria-valuenow": String(w.percent) }),
+            "aria-valuetext": w.percent == null ? (w.detail ?? "Usage percentage unavailable") : pctText,
+          },
+          el("i", { style: { width: `${w.percent ?? 0}%` } }),
+        ),
       );
       if (w.detail) row.append(el("div", { class: "detail", text: w.detail }));
       card.append(row);
@@ -130,6 +140,7 @@ function renderUsage() {
       for (const x of r.extras) ex.append(el("span", {}, `${x.label}: `, el("b", { text: x.value })));
       card.append(ex);
     }
+    if (r.status === "ok" && r.message) card.append(el("div", { class: "status note", text: r.message }));
     viewUsage.append(card);
   }
   $("#headDot").className = `dot ${worst}`;
@@ -186,7 +197,11 @@ async function renderSettings() {
       "aria-label": `Enable ${p.name}`,
       ...(pc.enabled !== false ? { checked: "" } : {}),
     });
-    const sec = el("section", {}, el("label", { class: "secHead" }, el("h2", { text: p.name }), toggle));
+    const sec = el(
+      "section",
+      { "data-provider": p.id },
+      el("label", { class: "secHead" }, el("h2", { text: p.name }), toggle),
+    );
     if (p.help) sec.append(el("div", { class: "help", text: p.help }));
     for (const f of p.fields) {
       const input = el("input", {

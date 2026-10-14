@@ -180,6 +180,10 @@ main::-webkit-scrollbar-thumb {
   color: var(--muted);
   font-size: 12px;
 }
+.card .status.note {
+  margin-top: 6px;
+  font-size: 11px;
+}
 .card.err .status {
   color: var(--critical);
 }
@@ -242,6 +246,15 @@ main::-webkit-scrollbar-thumb {
 .bar.unknown > i {
   background: var(--unknown);
   width: 0;
+}
+.bar.unknown {
+  background: repeating-linear-gradient(
+    135deg,
+    var(--track),
+    var(--track) 4px,
+    var(--card-border) 4px,
+    var(--card-border) 8px
+  );
 }
 .win .detail {
   color: var(--muted);

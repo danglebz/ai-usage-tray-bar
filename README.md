@@ -45,6 +45,8 @@ fal.ai's [billing endpoint](https://fal.ai/docs/platform-apis/v1/account/billing
 
 Probe these cards with `pnpm probe google-veo google-gemini fal anthropic-api`. Claude Console keeps the existing `anthropic-api` config ID so saved settings are retained.
 
+These cards use the same progress bars as OpenRouter. Set a **Monthly request/token target** for Google or a **Monthly spend target (USD)** for fal.ai and Claude Console. Bars labelled **local target** compare reported month-to-date usage with that target and reset at the start of each UTC month; they do not change provider quotas, account credits or billing limits. Actual remaining credits stay separate. Missing usage or a missing target produces a grey striped bar with **—**, never a fabricated 0% or 100%.
+
 ## Install
 
 ### Portable exe

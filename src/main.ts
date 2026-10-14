@@ -213,8 +213,12 @@ async function debugScreenshot(file: string): Promise<void> {
   }
   const screenshotProvider = process.env.AI_USAGE_SCREENSHOT_PROVIDER;
   if (screenshotProvider && providers.some((p) => p.id === screenshotProvider)) {
+    const view = process.env.AI_USAGE_SCREENSHOT_SETTINGS ? "#providerSettings" : "#viewUsage";
     await popup.webContents.executeJavaScript(
-      `document.querySelector('[data-provider="${screenshotProvider}"]')?.scrollIntoView({block:"start"})`,
+      `new Promise(resolve => {
+        document.querySelector('${view} [data-provider="${screenshotProvider}"]')?.scrollIntoView({block:"start", behavior:"instant"});
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve(true)));
+      })`,
     );
   }
   const img = await popup.webContents.capturePage();
