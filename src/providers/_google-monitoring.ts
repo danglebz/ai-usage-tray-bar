@@ -215,6 +215,12 @@ export async function fetchGoogle(config: ProviderConfig, kind: "gemini" | "veo"
         url: billingUrl,
       },
     ];
+    if (backend === "gemini")
+      extras.push({
+        label: "Gemini API spend",
+        value: "View project spend",
+        url: `https://aistudio.google.com/spend?project=${encodeURIComponent(auth.project)}`,
+      });
     if (kind === "veo") extras.push(extra("Billing unit", "video requests/seconds"));
     extras.push(
       ...modelUsage(matching, kind === "veo" ? "requests" : backend === "vertex" ? "tokens" : "output tokens"),

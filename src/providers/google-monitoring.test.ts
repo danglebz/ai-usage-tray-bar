@@ -106,4 +106,7 @@ it("collects all month token pages instead of silently undercounting", async () 
   expect(result.windows[0]?.detail).toContain("8 used");
   expect(result.extras.find((x) => x.label === "gemini-2.5-flash")?.value).toBe("8 output tokens");
   expect(result.extras.find((x) => x.label === "Credit balance")?.url).toBe("https://aistudio.google.com/billing");
+  expect(result.extras.find((x) => x.label === "Gemini API spend")?.url).toBe(
+    "https://aistudio.google.com/spend?project=test-project",
+  );
 });

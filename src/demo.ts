@@ -49,6 +49,11 @@ export function demoResults(): ProviderResult[] {
       ],
       extras: [
         { label: "Credit balance", value: "View in AI Studio Billing", url: "https://aistudio.google.com/billing" },
+        {
+          label: "Gemini API spend",
+          value: "View project spend",
+          url: "https://aistudio.google.com/spend?project=demo-project",
+        },
         { label: "gemini-3.6-flash", value: "295,825 output tokens" },
         { label: "gemini-3.8-flash-tts", value: "175 output tokens" },
       ],
