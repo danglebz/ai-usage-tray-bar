@@ -2,7 +2,7 @@
 // https://docs.cloud.google.com/monitoring/api/metrics_gcp_d_h (Gemini API)
 // https://docs.cloud.google.com/monitoring/api/metrics_gcp_a_b (Vertex / Veo)
 import type { Extra, Provider, ProviderConfig, Snapshot, UsageWindow } from "../types.ts";
-import { BillingConfigError, billingJson, ENV_FILE_FIELD } from "./_billing.ts";
+import { BillingConfigError, billingJson } from "./_billing.ts";
 import { googleAuth } from "./_google-auth.ts";
 import { extra, isObject, monthStart, prop, snap, str, win } from "./_util.ts";
 
@@ -223,17 +223,25 @@ export function googleProvider(kind: "gemini" | "veo"): Provider {
     fetch: (config) => fetchGoogle(config, kind),
     help: "Reads Google Cloud Monitoring using a service account with Monitoring Viewer. An inference API key alone cannot read historical usage or quotas.",
     needsConfig: [
-      ENV_FILE_FIELD,
+      {
+        key: "serviceAccountKey",
+        label: "Monitoring API key — service-account JSON",
+        placeholder: '{"type":"service_account",…}',
+        help: "Paste the service-account JSON key (JSON or base64). Monitoring Viewer is required. A Gemini/Vertex model API key cannot read historical usage.",
+        secret: true,
+        docUrl: "https://console.cloud.google.com/iam-admin/serviceaccounts",
+        docLabel: "Service accounts",
+      },
       {
         key: "serviceAccountFile",
         label: "Service-account JSON file — optional",
-        help: "Alternatively read GOOGLE_SERVICE_ACCOUNT_KEY from the selected env file.",
+        help: "Alternatively enter the absolute path to your service-account JSON key file.",
         secret: false,
       },
       {
         key: "cloudProject",
         label: "Google Cloud project ID — optional",
-        help: "Defaults to GOOGLE_CLOUD_PROJECT or the service account's project.",
+        help: "Defaults to the project in the service-account key.",
         secret: false,
       },
       {

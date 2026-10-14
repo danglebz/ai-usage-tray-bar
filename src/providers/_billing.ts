@@ -3,7 +3,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { parseEnv } from "node:util";
-import type { ConfigField, ProviderConfig } from "../types.ts";
+import type { ProviderConfig } from "../types.ts";
 import { USER_AGENT } from "./_util.ts";
 
 export class BillingConfigError extends Error {}
@@ -17,13 +17,6 @@ export function billingEnvironment(config: ProviderConfig): NodeJS.ProcessEnv {
     throw new BillingConfigError("Could not read the selected env file. Check its path in Settings.");
   }
 }
-export const ENV_FILE_FIELD: ConfigField = {
-  key: "envFile",
-  label: "Project env file — optional",
-  placeholder: "C:\\path\\to\\project\\.env.local",
-  help: "Read existing credentials from this file without copying them into the tray config.",
-  secret: false,
-};
 export async function billingJson(
   url: string,
   options: { method?: "GET" | "POST"; headers: Record<string, string>; body?: string },

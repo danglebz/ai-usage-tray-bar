@@ -13,7 +13,7 @@ it("shows real credits and billing units, without labelling a budget as provider
   vi.mocked(fetch).mockImplementation(async (url) =>
     Response.json(String(url).includes("account/billing") ? bill : usage),
   );
-  const result = await provider.fetch({ ...key, monthlyBudget: 10 });
+  const result = await provider.fetch({ ...key, monthlyBudget: 10, envFile: "C:/missing/.env" });
   expect(result.extras).toContainEqual({ label: "Credits remaining", value: "$12.50" });
   expect(result.extras).toContainEqual({ label: "Month second", value: "8" });
   expect(result.windows[0]?.percent).toBe(20);

@@ -9,15 +9,16 @@ import { isObject, num, str } from "./_util.ts";
 const TOKEN_URL = "https://oauth2.googleapis.com/token";
 const cache = new Map<string, { token: string; expires: number }>();
 export async function googleAuth(config: ProviderConfig) {
-  const env = billingEnvironment(config);
-  let raw = env.GOOGLE_SERVICE_ACCOUNT_KEY || "";
+  const direct = typeof config.serviceAccountKey === "string" ? config.serviceAccountKey.trim() : "";
+  const env = direct ? process.env : billingEnvironment(config);
+  let raw = direct || env.GOOGLE_SERVICE_ACCOUNT_KEY || "";
   const file =
     typeof config.serviceAccountFile === "string" && config.serviceAccountFile
       ? config.serviceAccountFile
       : !raw
         ? env.GOOGLE_APPLICATION_CREDENTIALS
         : undefined;
-  if (file) {
+  if (file && !direct) {
     try {
       raw = fs.readFileSync(file, "utf8");
     } catch {
@@ -26,7 +27,7 @@ export async function googleAuth(config: ProviderConfig) {
   }
   if (!raw)
     throw new BillingConfigError(
-      "Choose a service-account JSON file or a project env file containing GOOGLE_SERVICE_ACCOUNT_KEY. Monitoring Viewer is required.",
+      "Paste a Google service-account JSON key in Settings, or enter its JSON file path. Monitoring Viewer is required; a model API key cannot read historical usage.",
     );
   let key: unknown;
   try {
@@ -46,7 +47,9 @@ export async function googleAuth(config: ProviderConfig) {
   const project =
     typeof config.cloudProject === "string" && config.cloudProject.trim()
       ? config.cloudProject.trim()
-      : env.GOOGLE_CLOUD_PROJECT || str(key.project_id);
+      : direct
+        ? str(key.project_id)
+        : env.GOOGLE_CLOUD_PROJECT || str(key.project_id);
   if (!project || !/^[a-zA-Z0-9][a-zA-Z0-9-]{3,62}$/.test(project))
     throw new BillingConfigError("Choose the Google Cloud project ID in Settings.");
   const fingerprint = createHash("sha256").update(raw).digest("hex");

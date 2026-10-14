@@ -46,3 +46,31 @@ it("fails without touching any CLI OAuth files when no service account exists", 
   await expect(googleAuth({})).rejects.toThrow("service-account");
   expect(fetch).not.toHaveBeenCalled();
 });
+
+it("uses a pasted key without reading stale env or credential file paths", async () => {
+  vi.stubEnv("GOOGLE_CLOUD_PROJECT", "unrelated-project");
+  vi.stubEnv("GOOGLE_SERVICE_ACCOUNT_KEY", "unrelated-credential");
+  vi.stubGlobal("fetch", vi.fn().mockResolvedValue(Response.json({ access_token: "test-token" })));
+  const { googleAuth } = await import("./_google-auth.ts");
+  const result = await googleAuth({
+    serviceAccountKey: JSON.stringify({
+      client_email: "reader@example.iam.gserviceaccount.com",
+      project_id: "pasted-key-project",
+      private_key: pair.privateKey.export({ type: "pkcs8", format: "pem" }),
+    }),
+    envFile: "C:/missing/.env",
+    serviceAccountFile: "C:/missing/key.json",
+  });
+  expect(result.project).toBe("pasted-key-project");
+  expect(result.token).toBe("test-token");
+});
+
+it("rejects a model API key without sending it or echoing it in an error", async () => {
+  vi.stubGlobal("fetch", vi.fn());
+  const { googleAuth } = await import("./_google-auth.ts");
+  const result = await googleAuth({ serviceAccountKey: "AIza-private-test-value" }).catch((error: Error) => error);
+  expect(result).toBeInstanceOf(Error);
+  expect(String(result)).toContain("JSON");
+  expect(String(result)).not.toContain("AIza-private-test-value");
+  expect(fetch).not.toHaveBeenCalled();
+});

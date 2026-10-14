@@ -1,7 +1,7 @@
 ﻿// Claude Console's Usage & Cost Admin API, separate from Claude Code quotas.
 // https://platform.claude.com/docs/en/manage-claude/usage-cost-api
 import type { Extra, Provider, ProviderConfig, Snapshot } from "../types.ts";
-import { BillingConfigError, billingEnvironment, billingJson, ENV_FILE_FIELD } from "./_billing.ts";
+import { BillingConfigError, billingEnvironment, billingJson } from "./_billing.ts";
 import { extra, isObject, monthStart, prop, snap, str, usd, win } from "./_util.ts";
 
 async function report(key: string, endpoint: string, end: string): Promise<unknown[]> {
@@ -47,11 +47,10 @@ function number(value: unknown): number {
 }
 async function fetchUsage(config: ProviderConfig): Promise<Snapshot> {
   try {
-    const env = billingEnvironment(config);
-    const key = config.adminKey || env.ANTHROPIC_ADMIN_KEY;
+    const key = config.adminKey || billingEnvironment(config).ANTHROPIC_ADMIN_KEY;
     if (!key)
       return snap.notConfigured(
-        "Add a Claude Console Admin key or organization-scoped personal/service-account key, or select an env file containing ANTHROPIC_ADMIN_KEY. Workspace-scoped keys cannot read account reports.",
+        "Paste a Claude Console Admin key or organization-scoped personal/service-account key in Settings. Workspace-scoped keys cannot read account reports.",
       );
     const end = new Date().toISOString();
     const [cost, usage] = await Promise.allSettled([
@@ -129,7 +128,6 @@ const provider: Provider = {
       docLabel: "Create key",
       secret: true,
     },
-    ENV_FILE_FIELD,
     { key: "monthlyBudget", label: "Local monthly USD budget — optional", placeholder: "50", secret: false },
   ],
 };

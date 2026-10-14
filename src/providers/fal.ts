@@ -2,7 +2,7 @@
 // https://fal.ai/docs/platform-apis/v1/account/billing (expand=credits)
 // https://fal.ai/docs/platform-apis/v1/models/usage (paged, BILLING preset).
 import type { Extra, Provider, ProviderConfig, Snapshot } from "../types.ts";
-import { BillingConfigError, billingEnvironment, billingJson, ENV_FILE_FIELD } from "./_billing.ts";
+import { BillingConfigError, billingEnvironment, billingJson } from "./_billing.ts";
 import { extra, isObject, monthStart, num, prop, snap, str, usd, win } from "./_util.ts";
 
 async function monthlyUsage(key: string): Promise<{ spend: number; units: Map<string, number> }> {
@@ -49,12 +49,9 @@ async function monthlyUsage(key: string): Promise<{ spend: number; units: Map<st
 
 async function fetchUsage(config: ProviderConfig): Promise<Snapshot> {
   try {
-    const env = billingEnvironment(config);
-    const key = config.apiKey || env.FAL_KEY;
+    const key = config.apiKey || billingEnvironment(config).FAL_KEY;
     if (!key)
-      return snap.notConfigured(
-        "Add a fal.ai BILLING API key in Settings, or select a project env file containing FAL_KEY.",
-      );
+      return snap.notConfigured("Paste a fal.ai BILLING API key in Settings. READONLY keys can read credits only.");
     const [billing, usage] = await Promise.all([
       billingJson("https://api.fal.ai/v1/account/billing?expand=credits", {
         headers: { Authorization: `Key ${key}` },
@@ -130,7 +127,6 @@ const provider: Provider = {
       docUrl: "https://fal.ai/dashboard/keys",
       docLabel: "Create key",
     },
-    ENV_FILE_FIELD,
     { key: "monthlyBudget", label: "Local monthly USD budget — optional", placeholder: "50", secret: false },
   ],
 };

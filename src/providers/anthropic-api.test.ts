@@ -20,7 +20,7 @@ const usage = {
 const cost = { data: [{ results: [{ amount: "125" }] }], has_more: false };
 it("includes all cache tokens and converts cents while keeping Console credit unknown", async () => {
   vi.mocked(fetch).mockImplementation(async (url) => Response.json(String(url).includes("cost_report") ? cost : usage));
-  const result = await provider.fetch({ adminKey: "test", monthlyBudget: 5 });
+  const result = await provider.fetch({ adminKey: "test", monthlyBudget: 5, envFile: "C:/missing/.env" });
   expect(result.extras).toContainEqual({ label: "Month tokens (UTC)", value: "165" });
   expect(result.extras).toContainEqual({ label: "Month spend (UTC)", value: "$1.25" });
   expect(result.extras).toContainEqual({
