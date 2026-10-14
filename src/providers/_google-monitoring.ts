@@ -23,6 +23,21 @@ interface Metric {
 }
 const count = (n: number) => n.toLocaleString("en-US", { maximumFractionDigits: 2 });
 
+function modelUsage(series: Series[], unit: "requests" | "output tokens" | "tokens"): Extra[] {
+  const totals = new Map<string, number>();
+  for (const item of series) {
+    const value = item.points.reduce((sum, point) => sum + point.value, 0);
+    totals.set(item.model, (totals.get(item.model) ?? 0) + value);
+  }
+  const ranked = [...totals].filter(([, value]) => value > 0).sort((a, b) => b[1] - a[1]);
+  const result = ranked.slice(0, 3).map(([model, value]) => extra(model, `${count(value)} ${unit}`));
+  if (ranked.length > 3)
+    result.push(
+      extra(`${ranked.length - 3} other models`, `${count(ranked.slice(3).reduce((n, [, v]) => n + v, 0))} ${unit}`),
+    );
+  return result;
+}
+
 async function metric(
   token: string,
   project: string,
@@ -189,8 +204,21 @@ export async function fetchGoogle(config: ProviderConfig, kind: "gemini" | "veo"
           ? "Month tokens (UTC)"
           : "Month output tokens (UTC)";
     const reportedTotal = matching.some((s) => s.points.length) ? total : null;
-    const extras: Extra[] = [extra("Credit balance", "Not exposed by Cloud Monitoring")];
+    const billingUrl =
+      backend === "gemini"
+        ? "https://aistudio.google.com/billing"
+        : `https://console.cloud.google.com/billing?project=${encodeURIComponent(auth.project)}`;
+    const extras: Extra[] = [
+      {
+        label: "Credit balance",
+        value: backend === "gemini" ? "View in AI Studio Billing" : "View in Cloud Billing",
+        url: billingUrl,
+      },
+    ];
     if (kind === "veo") extras.push(extra("Billing unit", "video requests/seconds"));
+    extras.push(
+      ...modelUsage(matching, kind === "veo" ? "requests" : backend === "vertex" ? "tokens" : "output tokens"),
+    );
     const quota = quotas.flatMap((q) => quotaWindows(q.limit.series, q.usage.series, kind, now.getTime(), q.name));
     const windows = [monthlyProgress(label, reportedTotal, config.monthlyUsageTarget), ...quota];
     if (!quota.length) extras.push(extra("Provider quota", "No matching recent quota samples"));

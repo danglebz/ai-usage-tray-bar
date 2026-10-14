@@ -27,7 +27,11 @@ export function demoResults(): ProviderResult[] {
         monthlyProgress("Month requests (UTC)", 4200, 10000),
         win("veo-3.1 · requests/min · global", 40, null, { detail: "4 used / 10 · 6 left in the reported minute" }),
       ],
-      extras: [{ label: "Credit balance", value: "Not exposed by Cloud Monitoring" }],
+      extras: [
+        { label: "Credit balance", value: "View in Cloud Billing", url: "https://console.cloud.google.com/billing" },
+        { label: "veo-3.1-fast-generate-001", value: "4,000 requests" },
+        { label: "veo-3.1-generate-001", value: "200 requests" },
+      ],
       fetchedAt,
     },
     {
@@ -43,7 +47,11 @@ export function demoResults(): ProviderResult[] {
           detail: "25,000 used / 200,000 · 175,000 left in the reported minute",
         }),
       ],
-      extras: [{ label: "Credit balance", value: "Not exposed by Cloud Monitoring" }],
+      extras: [
+        { label: "Credit balance", value: "View in AI Studio Billing", url: "https://aistudio.google.com/billing" },
+        { label: "gemini-3.6-flash", value: "295,825 output tokens" },
+        { label: "gemini-3.8-flash-tts", value: "175 output tokens" },
+      ],
       fetchedAt,
     },
     {

@@ -28,6 +28,8 @@ export interface UsageWindow {
 export interface Extra {
   label: string;
   value: string;
+  /** Optional official page for a figure the provider does not expose through this API. */
+  url?: string;
 }
 
 /** What `Provider.fetch` returns. Every constructor in `snap` fills the required fields. */

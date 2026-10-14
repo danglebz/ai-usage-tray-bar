@@ -71,6 +71,10 @@ it("reads Vertex Veo request counts without generating videos", async () => {
   expect(result.windows[0]?.percent).toBe(70);
   expect(result.windows[0]?.detail).toBe("7 / 10 · 3 left");
   expect(result.extras.find((x) => x.label === "Billing unit")?.value).toContain("requests/seconds");
+  expect(result.extras.find((x) => x.label === "veo-3.1")?.value).toBe("7 requests");
+  expect(result.extras.find((x) => x.label === "Credit balance")?.url).toBe(
+    "https://console.cloud.google.com/billing?project=test-project",
+  );
   expect(
     vi.mocked(fetch).mock.calls.every(([url]) => String(url).startsWith("https://monitoring.googleapis.com/")),
   ).toBe(true);
@@ -98,5 +102,8 @@ it("collects all month token pages instead of silently undercounting", async () 
       ...(next ? {} : { nextPageToken: "next-page" }),
     });
   });
-  expect((await fetchGoogle({}, "gemini")).windows[0]?.detail).toContain("8 used");
+  const result = await fetchGoogle({}, "gemini");
+  expect(result.windows[0]?.detail).toContain("8 used");
+  expect(result.extras.find((x) => x.label === "gemini-2.5-flash")?.value).toBe("8 output tokens");
+  expect(result.extras.find((x) => x.label === "Credit balance")?.url).toBe("https://aistudio.google.com/billing");
 });

@@ -137,7 +137,8 @@ function renderUsage() {
 
     if (r.extras.length) {
       const ex = el("div", { class: "extras" });
-      for (const x of r.extras) ex.append(el("span", {}, `${x.label}: `, el("b", { text: x.value })));
+      for (const x of r.extras)
+        ex.append(el("span", {}, `${x.label}: `, x.url ? extLink(x.url, x.value) : el("b", { text: x.value })));
       card.append(ex);
     }
     if (r.status === "ok" && r.message) card.append(el("div", { class: "status note", text: r.message }));
