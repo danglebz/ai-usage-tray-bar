@@ -16,9 +16,13 @@ async function report(key: string, endpoint: string, end: string): Promise<unkno
   const seen = new Set<string>();
   for (let page = 0; page < 20; page++) {
     const result = await billingJson(url.href, { headers: { "x-api-key": key, "anthropic-version": "2023-06-01" } });
-    if (result.status === 401 || result.status === 403)
+    if (result.status === 401)
       throw new BillingConfigError(
-        `Claude Console HTTP ${result.status}: usage reports require an organization with an Admin API key. Inference keys and individual accounts may not have access.`,
+        "Claude Console HTTP 401: the configured key is invalid or expired. Replace it with an Admin key or an organization-scoped personal/service-account key.",
+      );
+    if (result.status === 403)
+      throw new BillingConfigError(
+        "Claude Console HTTP 403: usage reports need organization access. Use an Admin key or an organization-scoped personal/service-account key with report access; workspace-scoped keys cannot read these reports.",
       );
     if (!result.ok || !isObject(result.json) || !Array.isArray(result.json.data))
       throw new BillingConfigError(`Claude Console report unavailable (HTTP ${result.status}).`);
@@ -47,7 +51,7 @@ async function fetchUsage(config: ProviderConfig): Promise<Snapshot> {
     const key = config.adminKey || env.ANTHROPIC_ADMIN_KEY;
     if (!key)
       return snap.notConfigured(
-        "Add a Claude Console Admin API key, or select an env file containing ANTHROPIC_ADMIN_KEY. A generation key cannot read account usage.",
+        "Add a Claude Console Admin key or organization-scoped personal/service-account key, or select an env file containing ANTHROPIC_ADMIN_KEY. Workspace-scoped keys cannot read account reports.",
       );
     const end = new Date().toISOString();
     const [cost, usage] = await Promise.allSettled([
@@ -118,10 +122,10 @@ const provider: Provider = {
   needsConfig: [
     {
       key: "adminKey",
-      label: "Console Admin API key",
+      label: "Console organization API key",
       placeholder: "sk-ant-admin01-…",
-      help: "Organization account with Usage & Cost access required. Separate from Claude Code and a normal inference key.",
-      docUrl: "https://platform.claude.com/settings/admin-keys",
+      help: "Use an Admin key or a personal/service-account key with Organization scope and Usage & Cost access. Workspace scope cannot read reports.",
+      docUrl: "https://platform.claude.com/settings/keys",
       docLabel: "Create key",
       secret: true,
     },
