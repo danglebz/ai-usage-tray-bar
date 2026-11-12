@@ -84,7 +84,16 @@ const STATUS_TEXT = {
 /** @type {Record<Severity, number>} */
 const RANK = { unknown: 0, normal: 1, warning: 2, critical: 3 };
 
+/** Provider id of the card being dragged. While set, refreshes wait so the DOM stays put. */
+/** @type {string | null} */
+let draggingId = null;
+let renderPending = false;
+
 function renderUsage() {
+  if (draggingId) {
+    renderPending = true;
+    return;
+  }
   viewUsage.replaceChildren();
   if (!state.results.length) {
     viewUsage.append(el("div", { class: "empty", text: state.refreshing ? "Loading…" : "No providers enabled." }));
@@ -93,7 +102,7 @@ function renderUsage() {
   let worst = "unknown";
   for (const r of state.results) {
     const tone = r.status === "ok" ? "" : r.status === "error" || r.status === "expired" ? "err" : "idle";
-    const card = el("div", { class: `card ${tone}`, "data-provider": r.id });
+    const card = el("div", { class: `card ${tone}`, "data-provider": r.id, draggable: "true" });
     const head = el("div", { class: "head" }, el("span", { class: "name", text: r.name }));
     if (r.plan) head.append(el("span", { class: "plan", text: r.plan }));
     if (r.source === "local") head.append(el("span", { class: "badge", text: "local" }));
@@ -149,6 +158,75 @@ function renderUsage() {
   $("#btnRefresh").classList.toggle("spin", !!state.refreshing);
 }
 
+/** Provider ids of the cards as they currently sit, top to bottom. */
+function cardIds() {
+  return [...viewUsage.querySelectorAll(".card")].map(
+    (c) => (c instanceof HTMLElement ? c.dataset.provider : "") ?? "",
+  );
+}
+
+/**
+ * The first card whose middle is below `y`, i.e. the one the dragged card goes in front of.
+ * @param {number} y
+ */
+function cardBelow(y) {
+  for (const card of viewUsage.querySelectorAll(".card:not(.dragging)")) {
+    const box = card.getBoundingClientRect();
+    if (y < box.top + box.height / 2) return card;
+  }
+  return null;
+}
+
+// Cards reorder by dragging. The card moves live while dragging; letting go stores the order
+// (main re-sorts and broadcasts it back), and Esc or a drop outside the list puts it back.
+let orderBefore = "";
+// Whether the drag ended in a drop on the list. Tracked here rather than read from dragend's
+// dropEffect, which is not reliable enough to tell a drop from a cancel.
+let dropped = false;
+viewUsage.addEventListener("dragstart", (e) => {
+  const card = e.target instanceof Element ? e.target.closest(".card") : null;
+  if (!(card instanceof HTMLElement) || !card.dataset.provider || !e.dataTransfer) return;
+  draggingId = card.dataset.provider;
+  dropped = false;
+  orderBefore = cardIds().join("\n");
+  e.dataTransfer.effectAllowed = "move";
+  e.dataTransfer.setData("text/plain", draggingId);
+  // Faded only after Chromium has taken the drag image, so the image itself stays solid.
+  requestAnimationFrame(() => card.classList.add("dragging"));
+});
+viewUsage.addEventListener("dragover", (e) => {
+  if (!draggingId) return;
+  e.preventDefault();
+  if (e.dataTransfer) e.dataTransfer.dropEffect = "move";
+  const dragged = viewUsage.querySelector(".card.dragging");
+  if (!dragged) return;
+  const below = cardBelow(e.clientY);
+  if (below) {
+    if (below !== dragged.nextElementSibling) viewUsage.insertBefore(dragged, below);
+  } else if (dragged !== viewUsage.lastElementChild) viewUsage.append(dragged);
+});
+viewUsage.addEventListener("drop", (e) => {
+  if (!draggingId) return;
+  e.preventDefault();
+  dropped = true;
+});
+viewUsage.addEventListener("dragend", () => {
+  if (!draggingId) return;
+  draggingId = null;
+  viewUsage.querySelector(".card.dragging")?.classList.remove("dragging");
+  const ids = cardIds();
+  const cancelled = !dropped;
+  if (!cancelled && ids.join("\n") !== orderBefore) {
+    state = { ...state, results: [...state.results].sort((a, b) => ids.indexOf(a.id) - ids.indexOf(b.id)) };
+    void window.api.setCardOrder(ids);
+  }
+  // Cancelled: redraw from `state`, which still holds the order from before the drag.
+  if (cancelled || renderPending) {
+    renderPending = false;
+    renderUsage();
+  }
+});
+
 /**
  * A link that opens in the real browser. A plain <a href> inside the panel would either
  * navigate the panel itself or be blocked, so the click goes through the main process,
@@ -160,6 +238,8 @@ function extLink(url, text) {
   return el("a", {
     class: "ext",
     href: "#",
+    // Links drag on their own by default, which would hijack a card drag started on one.
+    draggable: "false",
     title: url,
     text: `${text} ↗`,
     onclick: (e) => {

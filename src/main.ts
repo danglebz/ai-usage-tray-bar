@@ -19,9 +19,17 @@ import {
 import * as config from "./config.ts";
 import { demoResults } from "./demo.ts";
 import { ringIcon } from "./icon.ts";
-import { DEFAULT_POPUP_HEIGHT, popupLayout } from "./popup.ts";
+import { DEFAULT_POPUP_HEIGHT, POPUP_WIDTH, mergeCardOrder, orderCards, popupLayout, savedPosition } from "./popup.ts";
 import { fetchAll, providers } from "./providers/index.ts";
-import type { AppConfig, ConfigPatch, PublicConfig, Severity, UsageState, UsageWindow } from "./types.ts";
+import type {
+  AppConfig,
+  ConfigPatch,
+  ProviderResult,
+  PublicConfig,
+  Severity,
+  UsageState,
+  UsageWindow,
+} from "./types.ts";
 
 // Must match build.appId so packaged and unpackaged runs share one Windows identity.
 const AUMID = "local.ai-usage-tray";
@@ -78,6 +86,27 @@ function buildMenu(): Menu {
     { label: "Open panel", click: () => showPopup() },
     { type: "separator" },
     {
+      label: "Reset panel position",
+      enabled: !!cfg.popupPosition,
+      click: () => {
+        cfg.popupPosition = null;
+        config.save(cfg);
+        if (popup.isVisible()) positionPopup();
+      },
+    },
+    {
+      label: "Reset card order",
+      enabled: mergeCardOrder(cfg.cardOrder).length > 0,
+      click: () => {
+        cfg.cardOrder = [];
+        config.save(cfg);
+        last.results = sortCards(last.results);
+        updateTray();
+        broadcast();
+      },
+    },
+    { type: "separator" },
+    {
       label: "Start with Windows",
       type: "checkbox",
       checked: !!cfg.openAtLogin,
@@ -120,7 +149,8 @@ function createPopup(): void {
     frame: false,
     resizable: true,
     thickFrame: true,
-    movable: false,
+    // Dragged by the header, which the stylesheet marks as the window's drag region.
+    movable: true,
     minimizable: false,
     maximizable: false,
     fullscreenable: false,
@@ -150,9 +180,24 @@ function createPopup(): void {
   // Windows emits this once a native edge drag ends, rather than for every pixel.
   popup.on("resized", () => {
     if (SCREENSHOT) return;
-    const height = popup.getBounds().height;
-    if (cfg.popupHeight === height) return;
+    const { x, y, height } = popup.getBounds();
+    // Dragging the top edge moves the panel as well, so a parked panel keeps its new corner.
+    const position = cfg.popupPosition ? { x, y } : null;
+    if (cfg.popupHeight === height && cfg.popupPosition?.x === position?.x && cfg.popupPosition?.y === position?.y)
+      return;
     cfg.popupHeight = height;
+    cfg.popupPosition = position;
+    config.save(cfg);
+  });
+  // Likewise once a header drag ends. The panel opens where it was dropped from now on, pulled
+  // back on screen first if it was let go half past an edge.
+  popup.on("moved", () => {
+    if (SCREENSHOT) return;
+    const dropped = popup.getBounds();
+    cfg.popupPosition = { x: dropped.x, y: dropped.y };
+    positionPopup();
+    const settled = popup.getBounds();
+    cfg.popupPosition = { x: settled.x, y: settled.y };
     config.save(cfg);
   });
   screen.on("display-metrics-changed", () => {
@@ -162,9 +207,22 @@ function createPopup(): void {
 
 function currentPopupLayout() {
   const tb = tray.getBounds();
-  const display = screen.getDisplayNearestPoint({ x: tb.x, y: tb.y });
   const height = SCREENSHOT ? Number(process.env.AI_USAGE_SCREENSHOT_HEIGHT) || DEFAULT_POPUP_HEIGHT : cfg.popupHeight;
-  return popupLayout(tb, display.workArea, height);
+  const position = SCREENSHOT ? null : savedPosition(cfg.popupPosition);
+  // A parked panel opens on the display nearest the spot it was left at (the one it was on may
+  // have been unplugged since), judged by its header - the part the user dragged it by.
+  const anchor = position ? { x: position.x + POPUP_WIDTH / 2, y: position.y + 16 } : { x: tb.x, y: tb.y };
+  const display = screen.getDisplayNearestPoint(anchor);
+  return popupLayout(tb, display.workArea, height, position);
+}
+
+/**
+ * Cards in the user's dragged order, then the rest in registry order. Screenshot runs ignore
+ * the user's order so the README image does not depend on whose machine rendered it.
+ */
+function sortCards(results: ProviderResult[]): ProviderResult[] {
+  const own = SCREENSHOT ? [] : mergeCardOrder(cfg.cardOrder);
+  return orderCards(results, [...own, ...providers.map((p) => p.id)]);
 }
 
 function positionPopup(): void {
@@ -199,7 +257,7 @@ async function refresh(): Promise<void> {
   last.refreshing = true;
   broadcast();
   try {
-    const results = DEMO ? demoResults() : await fetchAll(cfg);
+    const results = sortCards(DEMO ? demoResults() : await fetchAll(cfg));
     last = { at: Date.now(), results, refreshing: false };
   } catch (e) {
     const message = e instanceof Error ? e.message : String(e);
@@ -556,6 +614,15 @@ ipcMain.handle("app:hide", () => popup.hide());
 ipcMain.handle("app:setPinned", (_e, pinned: boolean) => {
   cfg.pinned = !!pinned;
   config.save(cfg);
+});
+// The renderer has already moved the card; re-sorting here keeps the tooltip in the same order
+// and the next broadcast from snapping the card back.
+ipcMain.handle("app:setCardOrder", (_e, order: unknown) => {
+  cfg.cardOrder = mergeCardOrder(order, cfg.cardOrder);
+  config.save(cfg);
+  last.results = sortCards(last.results);
+  updateTray();
+  broadcast();
 });
 
 // Subscribing is what keeps the app alive without windows; the popup only ever hides anyway.

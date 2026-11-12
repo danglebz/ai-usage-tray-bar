@@ -100,6 +100,10 @@ export interface AppConfig {
   pinned: boolean;
   /** User-chosen panel height in DIP; clamped to the current display when opened. */
   popupHeight: number;
+  /** Top-left corner in DIP where the user dropped the panel; null keeps it by the tray icon. */
+  popupPosition: { x: number; y: number } | null;
+  /** Provider ids in the order the user dragged the cards into; empty means registry order. */
+  cardOrder: string[];
   providers: Record<string, ProviderConfig>;
 }
 
@@ -136,6 +140,8 @@ export interface Api {
   hide(): Promise<void>;
   /** Kept out of setConfig: that one reschedules timers and re-fetches every provider. */
   setPinned(pinned: boolean): Promise<void>;
+  /** Provider ids top to bottom after a card drag. Also kept out of setConfig, for the same reason. */
+  setCardOrder(order: string[]): Promise<void>;
   openConfigDir(): Promise<void>;
   openExternal(url: string): Promise<void>;
   /** Subscribe to refreshes; returns the unsubscribe function. */

@@ -153,6 +153,15 @@ main::-webkit-scrollbar-thumb {
   padding: 10px 12px;
   margin-bottom: 8px;
 }
+/* Cards reorder by drag and drop; the one being dragged leaves a dashed gap where it will land. */
+.card[draggable="true"] {
+  cursor: grab;
+}
+.card.dragging {
+  opacity: 0.4;
+  outline: 2px dashed var(--accent);
+  outline-offset: -2px;
+}
 .card .head {
   display: flex;
   align-items: baseline;
