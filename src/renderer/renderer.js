@@ -89,11 +89,35 @@ const RANK = { unknown: 0, normal: 1, warning: 2, critical: 3 };
 let draggingId = null;
 let renderPending = false;
 
+/**
+ * What a screen reader says for a card: the name, and the shortcut that is otherwise invisible.
+ * @param {string} name
+ */
+const cardLabel = (name) => `${name}. Alt+Up Arrow or Alt+Down Arrow moves this card.`;
+
+/**
+ * The announcement after a keyboard move.
+ * @param {string} name @param {number} position @param {number} total
+ */
+const movedText = (name, position, total) => `Moved ${name} to position ${position} of ${total}`;
+
+/** Provider id of the card that holds focus, or of the card around the focused control in it. */
+function focusedCardId() {
+  const active = document.activeElement;
+  const card = active instanceof Element ? active.closest(".card") : null;
+  return card instanceof HTMLElement && viewUsage.contains(card) ? (card.dataset.provider ?? null) : null;
+}
+
 function renderUsage() {
   if (draggingId) {
     renderPending = true;
     return;
   }
+  // Rebuilding the list drops focus along with the old cards, and every refresh broadcast
+  // rebuilds it, so the focused card is found again by its provider id afterwards.
+  const focusedId = focusedCardId();
+  /** @type {HTMLElement | null} */
+  let refocus = null;
   viewUsage.replaceChildren();
   if (!state.results.length) {
     viewUsage.append(el("div", { class: "empty", text: state.refreshing ? "Loading…" : "No providers enabled." }));
@@ -102,7 +126,16 @@ function renderUsage() {
   let worst = "unknown";
   for (const r of state.results) {
     const tone = r.status === "ok" ? "" : r.status === "error" || r.status === "expired" ? "err" : "idle";
-    const card = el("div", { class: `card ${tone}`, "data-provider": r.id, draggable: "true" });
+    // role="group" so the label has something to name: aria-label on a bare div is ignored.
+    const card = el("div", {
+      class: `card ${tone}`,
+      "data-provider": r.id,
+      draggable: "true",
+      tabindex: "0",
+      role: "group",
+      "aria-label": cardLabel(r.name),
+    });
+    if (r.id === focusedId) refocus = card;
     const head = el("div", { class: "head" }, el("span", { class: "name", text: r.name }));
     if (r.plan) head.append(el("span", { class: "plan", text: r.plan }));
     if (r.source === "local") head.append(el("span", { class: "badge", text: "local" }));
@@ -153,6 +186,8 @@ function renderUsage() {
     if (r.status === "ok" && r.message) card.append(el("div", { class: "status note", text: r.message }));
     viewUsage.append(card);
   }
+  // Not scrolled to: a timer-driven rebuild must not yank back a list the user scrolled away.
+  refocus?.focus({ preventScroll: true });
   $("#headDot").className = `dot ${worst}`;
   $("#stamp").textContent = state.refreshing ? "refreshing…" : relStamp(state.at);
   $("#btnRefresh").classList.toggle("spin", !!state.refreshing);
@@ -163,6 +198,16 @@ function cardIds() {
   return [...viewUsage.querySelectorAll(".card")].map(
     (c) => (c instanceof HTMLElement ? c.dataset.provider : "") ?? "",
   );
+}
+
+/**
+ * Keep a new card order: sort the local state to match, so a redraw does not snap the cards
+ * back, and hand it to main, which stores it and broadcasts the re-sorted state.
+ * @param {string[]} ids provider ids, top to bottom
+ */
+function commitOrder(ids) {
+  state = { ...state, results: [...state.results].sort((a, b) => ids.indexOf(a.id) - ids.indexOf(b.id)) };
+  void window.api.setCardOrder(ids);
 }
 
 /**
@@ -216,15 +261,36 @@ viewUsage.addEventListener("dragend", () => {
   viewUsage.querySelector(".card.dragging")?.classList.remove("dragging");
   const ids = cardIds();
   const cancelled = !dropped;
-  if (!cancelled && ids.join("\n") !== orderBefore) {
-    state = { ...state, results: [...state.results].sort((a, b) => ids.indexOf(a.id) - ids.indexOf(b.id)) };
-    void window.api.setCardOrder(ids);
-  }
+  if (!cancelled && ids.join("\n") !== orderBefore) commitOrder(ids);
   // Cancelled: redraw from `state`, which still holds the order from before the drag.
   if (cancelled || renderPending) {
     renderPending = false;
     renderUsage();
   }
+});
+
+// The same reorder without a pointer (WCAG 2.1.1, 2.5.7): Alt+Up / Alt+Down moves the focused
+// card one place. Alt keeps plain arrows free to scroll the list.
+viewUsage.addEventListener("keydown", (e) => {
+  if (!e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
+  const step = e.key === "ArrowUp" ? -1 : e.key === "ArrowDown" ? 1 : 0;
+  const card = e.target instanceof Element ? e.target.closest(".card") : null;
+  if (!step || !(card instanceof HTMLElement) || !card.dataset.provider) return;
+  // Also at the ends of the list, where nothing moves but the view must not scroll either.
+  e.preventDefault();
+  if (draggingId) return;
+  const id = card.dataset.provider;
+  const ids = cardIds();
+  const from = ids.indexOf(id);
+  const to = from + step;
+  if (from < 0 || to < 0 || to >= ids.length) return;
+  ids.splice(to, 0, ...ids.splice(from, 1));
+  commitOrder(ids);
+  // Redraw now rather than wait for main's broadcast; renderUsage keeps focus on the card.
+  renderUsage();
+  viewUsage.querySelector(`.card[data-provider="${CSS.escape(id)}"]`)?.scrollIntoView({ block: "nearest" });
+  const name = state.results.find((r) => r.id === id)?.name ?? id;
+  $("#announce").textContent = movedText(name, to + 1, ids.length);
 });
 
 /**
