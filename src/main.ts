@@ -58,7 +58,20 @@ process.on("uncaughtException", (e) => console.error("[uncaughtException]", e.st
 // already sitting in the tray, so it skips the single-instance lock and keeps its Chromium
 // profile apart from the running one's (two processes on one cache directory log errors).
 const SCREENSHOT = process.env.AI_USAGE_SCREENSHOT;
-if (SCREENSHOT) app.setPath("userData", path.join(app.getPath("temp"), "ai-usage-tray-screenshot"));
+if (SCREENSHOT) {
+  app.setPath("userData", path.join(app.getPath("temp"), "ai-usage-tray-screenshot"));
+  // A screenshot run must paint even when Windows judges the window covered or the desktop
+  // unattended (a CI runner). Chromium then treats the window as occluded and stops its frames:
+  // with a window laid over the panel, animation frames stop until it is uncovered, and a
+  // capture taken in that state can return the last frame drawn, the first paint with an empty
+  // list. These are the switches Puppeteer uses against that; they must be set before the app
+  // is ready. Occlusion tracking is a feature flag, so it is merged into any list already passed.
+  app.commandLine.appendSwitch("disable-backgrounding-occluded-windows");
+  app.commandLine.appendSwitch("disable-renderer-backgrounding");
+  const disabled = app.commandLine.getSwitchValue("disable-features").split(",").filter(Boolean);
+  if (!disabled.includes("CalculateNativeWinOcclusion")) disabled.push("CalculateNativeWinOcclusion");
+  app.commandLine.appendSwitch("disable-features", disabled.join(","));
+}
 if (!SCREENSHOT && !app.requestSingleInstanceLock()) {
   app.quit();
 } else {
@@ -170,13 +183,13 @@ function createPopup(): void {
   });
   popupLoaded = popup.loadFile(path.join(import.meta.dirname, "renderer", "index.html"));
   popup.on("blur", () => {
-    if (cfg.pinned) return; // pinned: only Esc, ✕ and the tray icon close it
     // A screenshot run behaves like a pinned panel. On a CI runner nobody holds the focus, so
     // it can be lost right after show(), and a hidden window is not composited: capturePage()
     // then returns the last frame drawn before the hide (the first paint, no cards) or never
     // returns. A run on a dev machine reads that machine's config.json, where `pinned: true`
     // hid the bug.
-    if (SCREENSHOT) return;
+    if (SCREENSHOT) return screenshotLog("blur ignored");
+    if (cfg.pinned) return; // pinned: only Esc, ✕ and the tray icon close it
     if (!popup.webContents.isDevToolsOpened()) popup.hide();
   });
   popup.on("close", (e) => {
@@ -301,8 +314,8 @@ let screenshotDone = false;
 // Upper bound for everything between "show the panel" and "capture it". Generous on purpose: a
 // cold CI runner needs several seconds to load the page, while a local run needs well under one.
 const SCREENSHOT_RENDER_TIMEOUT_MS = 15_000;
-// How long to wait for a frame after re-showing a panel that was found hidden at capture time.
-const SCREENSHOT_RESHOW_TIMEOUT_MS = 3_000;
+// How long to wait for a frame when the capture asks for one (re-showing, or a refresh).
+const SCREENSHOT_FRAME_TIMEOUT_MS = 3_000;
 
 /**
  * Resolves once `selector` matches in the panel and the browser has painted twice since, so a
@@ -320,6 +333,40 @@ function panelPainted(selector: string): Promise<unknown> {
   );
 }
 
+/** Settles with `p`, or with `late` once `ms` have passed. The timer never outlives the call. */
+async function within<T, L>(p: Promise<T>, ms: number, late: L): Promise<T | L> {
+  let timer: NodeJS.Timeout | undefined;
+  const expired = new Promise<L>((resolve) => {
+    timer = setTimeout(() => resolve(late), ms);
+  });
+  try {
+    return await Promise.race([p, expired]);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/**
+ * One line per notable event of a screenshot run, appended to the file named by
+ * AI_USAGE_SCREENSHOT_LOG. Electron's own output does not reach a Windows CI log, so this is how
+ * a bad screenshot explains itself. Best effort: diagnostics must never fail the run.
+ */
+function screenshotLog(line: string): void {
+  const file = process.env.AI_USAGE_SCREENSHOT_LOG;
+  if (!SCREENSHOT || !file) return;
+  try {
+    fs.appendFileSync(file, `${new Date().toISOString()} ${line}\n`);
+  } catch {
+    // ignore: see above
+  }
+}
+
+/** The panel's state as the user would see it, for the log: window flags plus the page's own view. */
+async function panelState(): Promise<string> {
+  const page = await within(popup.webContents.executeJavaScript("document.visibilityState"), 2_000, "no answer");
+  return `isVisible=${popup.isVisible()} isFocused=${popup.isFocused()} visibilityState=${String(page)}`;
+}
+
 /**
  * Last check before capturePage(): the panel must be on screen, because a hidden window is not
  * composited and capturing it yields a stale frame or nothing at all. The blur handler no longer
@@ -330,16 +377,20 @@ function panelPainted(selector: string): Promise<unknown> {
 async function ensurePanelShown(): Promise<void> {
   if (popup.isVisible()) return;
   console.error("[screenshot] panel was hidden before the capture, showing it again");
+  screenshotLog("panel was hidden before the capture, showing it again");
   popup.show();
-  let bound: NodeJS.Timeout | undefined;
-  const timeout = new Promise((resolve) => {
-    bound = setTimeout(resolve, SCREENSHOT_RESHOW_TIMEOUT_MS);
-  });
-  try {
-    await Promise.race([panelPainted("body"), timeout]);
-  } finally {
-    clearTimeout(bound);
-  }
+  await within(panelPainted("body"), SCREENSHOT_FRAME_TIMEOUT_MS, null);
+}
+
+/**
+ * Asks for a new frame and waits for it, so the capture is not of a frame that was drawn before
+ * the last DOM change. invalidate() asks the window to repaint and two animation frames follow
+ * it; both are cheap and change nothing on screen. The wait is bounded for the same reason as
+ * in ensurePanelShown().
+ */
+async function requestFreshFrame(): Promise<void> {
+  popup.webContents.invalidate();
+  await within(panelPainted("body"), SCREENSHOT_FRAME_TIMEOUT_MS, null);
 }
 
 /** Brings the panel to the state the screenshot options ask for, and returns once it has painted. */
@@ -370,6 +421,7 @@ async function preparePanel(): Promise<void> {
 
 async function debugScreenshot(file: string): Promise<void> {
   screenshotDone = true;
+  screenshotLog(`start disable-features=${app.commandLine.getSwitchValue("disable-features")}`);
   showPopup();
   // One deadline for the whole preparation, enforced here rather than inside the renderer: if
   // the renderer is wedged, or never paints because the window is hidden, nothing in it would
@@ -380,14 +432,19 @@ async function debugScreenshot(file: string): Promise<void> {
     giveUp = setTimeout(() => resolve("timeout"), SCREENSHOT_RENDER_TIMEOUT_MS);
   });
   try {
-    if ((await Promise.race([preparePanel(), timeout])) === "timeout")
+    if ((await Promise.race([preparePanel(), timeout])) === "timeout") {
       console.error(`[screenshot] panel not rendered after ${SCREENSHOT_RENDER_TIMEOUT_MS / 1000} s, capturing anyway`);
+      screenshotLog(`prepare timed out after ${SCREENSHOT_RENDER_TIMEOUT_MS / 1000} s`);
+    }
   } catch (e) {
     console.error("[screenshot] could not prepare the panel, capturing anyway:", e instanceof Error ? e.message : e);
+    screenshotLog(`prepare failed: ${e instanceof Error ? e.message : String(e)}`);
   } finally {
     clearTimeout(giveUp);
   }
   await ensurePanelShown();
+  await requestFreshFrame();
+  if (process.env.AI_USAGE_SCREENSHOT_LOG) screenshotLog(`before capture: ${await panelState()}`);
   if (process.env.AI_USAGE_DEBUG)
     console.log(
       "[popup]",
@@ -399,7 +456,9 @@ async function debugScreenshot(file: string): Promise<void> {
       }),
     );
   const img = await popup.webContents.capturePage();
-  fs.writeFileSync(file, img.toPNG());
+  const png = img.toPNG();
+  fs.writeFileSync(file, png);
+  screenshotLog(`captured ${img.getSize().width}x${img.getSize().height}, ${png.length} bytes`);
   app.quit();
 }
 
