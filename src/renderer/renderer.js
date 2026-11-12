@@ -200,8 +200,13 @@ async function renderSettings() {
     });
     const sec = el(
       "section",
-      { "data-provider": p.id },
+      { "data-provider": p.id, class: pc.enabled !== false ? "" : "off" },
       el("label", { class: "secHead" }, el("h2", { text: p.name }), toggle),
+    );
+    // A provider that is switched off shows only its heading: its fields are irrelevant until
+    // it is switched back on, and listing them all made the page too long to scan.
+    toggle.addEventListener("change", () =>
+      sec.classList.toggle("off", !(/** @type {HTMLInputElement} */ (toggle).checked)),
     );
     if (p.help) sec.append(el("div", { class: "help", text: p.help }));
     for (const f of p.fields) {

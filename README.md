@@ -76,7 +76,7 @@ To launch without a terminal, double-click `Start AI Usage Tray.cmd` (or make a 
 - In the panel: `R` refreshes, `S` opens Settings, `P` pins, `Esc` closes. ✕ closes the panel; quitting is in the tray menu and at the bottom of Settings.
 - **Pin** (the pushpin, left of ⟳) keeps the panel open when you click elsewhere, for watching a limit while you work. It stays pinned across restarts; `Esc`, ✕ and the tray icon still close it.
 - **Resize** by dragging the panel's top or bottom edge. The height is remembered across closing and restarting the app, and fits within the current display's work area. The width stays fixed.
-- Settings apply as you change them — there is no Save button.
+- Settings apply as you change them — there is no Save button. A provider that is switched off shows only its name and switch; its fields come back when it is switched on.
 - **Notifications:** a Windows toast when any window reaches the threshold (default 90 %, `0` turns it off). Each limit is announced once per period: not again on every refresh, and not at all once it is already at 100 % — at that point there is nothing left to save.
 - **Config** lives at `%APPDATA%\ai-usage-tray\config.json`. API keys are stored there in plain text, like the CLIs themselves do — keep the file to yourself.
 - **Terminal probe** without the GUI: `pnpm probe`, or `pnpm probe claude codex` for a subset. Handy when a provider misbehaves.
