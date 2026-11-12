@@ -51,7 +51,7 @@
     "@commitlint/config-conventional": "^21.2.3",
     "@eslint/js": "^10.0.1",
     "@types/node": "^26.6.4",
-    "electron": "^44.11.1",
+    "electron": "^45.2.3",
     "electron-builder": "^26.18.0",
     "eslint": "^10.12.0",
     "eslint-config-prettier": "^10.1.8",
