@@ -35,6 +35,7 @@
     "probe": "node src/cli.ts",
     "icon": "electron scripts/make-icon.ts",
     "screenshot": "node scripts/screenshot.ts",
+    "smoke": "node scripts/smoke.ts",
     "typecheck": "tsc -p tsconfig.json && tsc -p tsconfig.renderer.json",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",

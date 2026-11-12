@@ -37,3 +37,10 @@ jobs:
       - run: pnpm run lint
       - run: pnpm run format:check
       - run: pnpm run test
+
+      # Starts the real app in demo mode and expects a screenshot back. Everything above
+      # runs without Electron, so only this step catches an upgrade that breaks at launch.
+      # Kept out of `pnpm verify`, which must not open windows. The app's own run is capped
+      # at 60 s; the step limit just keeps a hung runner from burning Windows minutes.
+      - run: pnpm run smoke
+        timeout-minutes: 5
