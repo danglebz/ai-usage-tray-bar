@@ -162,11 +162,21 @@ function createPopup(): void {
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,
+      // A screenshot run keeps painting even while its window is hidden or covered, so the wait
+      // for the cards still gets its frames and ensurePanelShown() can put the panel back.
+      // Everywhere else the default (throttle) stays.
+      backgroundThrottling: !SCREENSHOT,
     },
   });
   popupLoaded = popup.loadFile(path.join(import.meta.dirname, "renderer", "index.html"));
   popup.on("blur", () => {
     if (cfg.pinned) return; // pinned: only Esc, ✕ and the tray icon close it
+    // A screenshot run behaves like a pinned panel. On a CI runner nobody holds the focus, so
+    // it can be lost right after show(), and a hidden window is not composited: capturePage()
+    // then returns the last frame drawn before the hide (the first paint, no cards) or never
+    // returns. A run on a dev machine reads that machine's config.json, where `pinned: true`
+    // hid the bug.
+    if (SCREENSHOT) return;
     if (!popup.webContents.isDevToolsOpened()) popup.hide();
   });
   popup.on("close", (e) => {
@@ -291,6 +301,8 @@ let screenshotDone = false;
 // Upper bound for everything between "show the panel" and "capture it". Generous on purpose: a
 // cold CI runner needs several seconds to load the page, while a local run needs well under one.
 const SCREENSHOT_RENDER_TIMEOUT_MS = 15_000;
+// How long to wait for a frame after re-showing a panel that was found hidden at capture time.
+const SCREENSHOT_RESHOW_TIMEOUT_MS = 3_000;
 
 /**
  * Resolves once `selector` matches in the panel and the browser has painted twice since, so a
@@ -306,6 +318,28 @@ function panelPainted(selector: string): Promise<unknown> {
       poll();
     })`,
   );
+}
+
+/**
+ * Last check before capturePage(): the panel must be on screen, because a hidden window is not
+ * composited and capturing it yields a stale frame or nothing at all. The blur handler no longer
+ * hides the panel in screenshot mode, so this should never fire; it is here so that any other
+ * way the window gets hidden fails loudly in the log instead of as an unexplained blank image.
+ * The wait is bounded so that a window that will not paint cannot hold the run past its exit.
+ */
+async function ensurePanelShown(): Promise<void> {
+  if (popup.isVisible()) return;
+  console.error("[screenshot] panel was hidden before the capture, showing it again");
+  popup.show();
+  let bound: NodeJS.Timeout | undefined;
+  const timeout = new Promise((resolve) => {
+    bound = setTimeout(resolve, SCREENSHOT_RESHOW_TIMEOUT_MS);
+  });
+  try {
+    await Promise.race([panelPainted("body"), timeout]);
+  } finally {
+    clearTimeout(bound);
+  }
 }
 
 /** Brings the panel to the state the screenshot options ask for, and returns once it has painted. */
@@ -353,6 +387,7 @@ async function debugScreenshot(file: string): Promise<void> {
   } finally {
     clearTimeout(giveUp);
   }
+  await ensurePanelShown();
   if (process.env.AI_USAGE_DEBUG)
     console.log(
       "[popup]",
