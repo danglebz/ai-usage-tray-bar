@@ -31,6 +31,9 @@ const DEMO = !!process.env.AI_USAGE_DEMO;
 
 let tray: Tray;
 let popup: BrowserWindow;
+// Settles when the panel's page has finished loading. Screenshot mode awaits it rather than
+// polling isLoading(), which can still read false just before the navigation has started.
+let popupLoaded: Promise<void>;
 const cfg: AppConfig = config.load();
 let last: UsageState = { at: null, results: [], refreshing: false };
 let timer: NodeJS.Timeout | null = null;
@@ -131,7 +134,7 @@ function createPopup(): void {
       sandbox: true,
     },
   });
-  void popup.loadFile(path.join(import.meta.dirname, "renderer", "index.html"));
+  popupLoaded = popup.loadFile(path.join(import.meta.dirname, "renderer", "index.html"));
   popup.on("blur", () => {
     if (cfg.pinned) return; // pinned: only Esc, ✕ and the tray icon close it
     if (!popup.webContents.isDevToolsOpened()) popup.hide();
@@ -224,15 +227,42 @@ async function refresh(): Promise<void> {
 }
 
 // Dev aid: AI_USAGE_SCREENSHOT=out.png pnpm start  → shows the popup, saves it, quits.
-// `pnpm screenshot` combines this with AI_USAGE_DEMO for the README images.
+// `pnpm screenshot` combines this with AI_USAGE_DEMO for the README images, and `pnpm smoke`
+// uses it to prove the app starts and paints.
 let screenshotDone = false;
-async function debugScreenshot(file: string): Promise<void> {
-  screenshotDone = true;
-  showPopup();
-  await new Promise((r) => setTimeout(r, 1500));
+// Upper bound for everything between "show the panel" and "capture it". Generous on purpose: a
+// cold CI runner needs several seconds to load the page, while a local run needs well under one.
+const SCREENSHOT_RENDER_TIMEOUT_MS = 15_000;
+
+/**
+ * Resolves once `selector` matches in the panel and the browser has painted twice since, so a
+ * capture shows that content rather than the frame before it. The check runs in the renderer
+ * because only it knows when its own DOM is built; polling is enough for a one-shot dev aid.
+ */
+function panelPainted(selector: string): Promise<unknown> {
+  return popup.webContents.executeJavaScript(
+    `new Promise(resolve => {
+      const poll = () => document.querySelector(${JSON.stringify(selector)})
+        ? requestAnimationFrame(() => requestAnimationFrame(() => resolve(true)))
+        : setTimeout(poll, 50);
+      poll();
+    })`,
+  );
+}
+
+/** Brings the panel to the state the screenshot options ask for, and returns once it has painted. */
+async function preparePanel(): Promise<void> {
+  // The page loads asynchronously and, in demo mode, the first refresh finishes before it has
+  // even started, so a fixed sleep is a bet on the machine's speed. Wait for the real events.
+  await popupLoaded;
+  // The renderer fetches the state itself once loaded. Cards when there are results; the
+  // empty-state line only when there are genuinely none. The main process knows which, which
+  // keeps a transient "Loading…" line from satisfying the wait.
+  await panelPainted(last.results.length ? "#viewUsage .card" : "#viewUsage .empty");
   if (process.env.AI_USAGE_SCREENSHOT_SETTINGS) {
     await popup.webContents.executeJavaScript("document.querySelector('#btnSettings').click()");
-    await new Promise((r) => setTimeout(r, 500));
+    // renderSettings() is async (it fetches the config over IPC) and then fills this box.
+    await panelPainted("#providerSettings section");
   }
   const screenshotProvider = process.env.AI_USAGE_SCREENSHOT_PROVIDER;
   if (screenshotProvider && providers.some((p) => p.id === screenshotProvider)) {
@@ -243,6 +273,27 @@ async function debugScreenshot(file: string): Promise<void> {
         requestAnimationFrame(() => requestAnimationFrame(() => resolve(true)));
       })`,
     );
+  }
+}
+
+async function debugScreenshot(file: string): Promise<void> {
+  screenshotDone = true;
+  showPopup();
+  // One deadline for the whole preparation, enforced here rather than inside the renderer: if
+  // the renderer is wedged, or never paints because the window is hidden, nothing in it would
+  // ever report back. Failing to prepare must not stop the capture or the exit: the app still
+  // exits 0, and whoever looks at the image (pnpm smoke checks its size) is the one to fail.
+  let giveUp: NodeJS.Timeout | undefined;
+  const timeout = new Promise<"timeout">((resolve) => {
+    giveUp = setTimeout(() => resolve("timeout"), SCREENSHOT_RENDER_TIMEOUT_MS);
+  });
+  try {
+    if ((await Promise.race([preparePanel(), timeout])) === "timeout")
+      console.error(`[screenshot] panel not rendered after ${SCREENSHOT_RENDER_TIMEOUT_MS / 1000} s, capturing anyway`);
+  } catch (e) {
+    console.error("[screenshot] could not prepare the panel, capturing anyway:", e instanceof Error ? e.message : e);
+  } finally {
+    clearTimeout(giveUp);
   }
   if (process.env.AI_USAGE_DEBUG)
     console.log(
