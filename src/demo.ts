@@ -29,7 +29,7 @@ export function demoResults(): ProviderResult[] {
       ],
       extras: [
         { label: "Credit balance", value: "View in Cloud Billing", url: "https://console.cloud.google.com/billing" },
-        { label: "veo-3.1-fast-generate-001", value: "4,000 requests" },
+        { label: "veo-3.1-fast-generate-001", value: "4K requests" },
         { label: "veo-3.1-generate-001", value: "200 requests" },
       ],
       fetchedAt,
@@ -54,7 +54,7 @@ export function demoResults(): ProviderResult[] {
           value: "View project spend",
           url: "https://aistudio.google.com/spend?project=demo-project",
         },
-        { label: "gemini-3.6-flash", value: "295,825 output tokens" },
+        { label: "gemini-3.6-flash", value: "295.8K output tokens" },
         { label: "gemini-3.8-flash-tts", value: "175 output tokens" },
       ],
       fetchedAt,

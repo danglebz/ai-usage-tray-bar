@@ -22,6 +22,12 @@ interface Metric {
   status: number;
 }
 const count = (n: number) => n.toLocaleString("en-US", { maximumFractionDigits: 2 });
+// Model lines only (505.2K, not 505,248): they break down the month bar above them, so the
+// leading digits are what matters, and the long form made each line wrap. Quota figures stay exact.
+const compact = (n: number) => n.toLocaleString("en-US", { notation: "compact", maximumFractionDigits: 1 });
+
+/** At most three lines per card: the top models, then one line summing the rest. */
+const MODEL_LINES = 3;
 
 function modelUsage(series: Series[], unit: "requests" | "output tokens" | "tokens"): Extra[] {
   const totals = new Map<string, number>();
@@ -30,10 +36,15 @@ function modelUsage(series: Series[], unit: "requests" | "output tokens" | "toke
     totals.set(item.model, (totals.get(item.model) ?? 0) + value);
   }
   const ranked = [...totals].filter(([, value]) => value > 0).sort((a, b) => b[1] - a[1]);
-  const result = ranked.slice(0, 3).map(([model, value]) => extra(model, `${count(value)} ${unit}`));
-  if (ranked.length > 3)
+  const shown = ranked.length <= MODEL_LINES ? ranked : ranked.slice(0, MODEL_LINES - 1);
+  const result = shown.map(([model, value]) => extra(model, `${compact(value)} ${unit}`));
+  const rest = ranked.slice(shown.length);
+  if (rest.length)
     result.push(
-      extra(`${ranked.length - 3} other models`, `${count(ranked.slice(3).reduce((n, [, v]) => n + v, 0))} ${unit}`),
+      extra(
+        `${rest.length} other ${rest.length === 1 ? "model" : "models"}`,
+        `${compact(rest.reduce((n, [, v]) => n + v, 0))} ${unit}`,
+      ),
     );
   return result;
 }
@@ -221,13 +232,14 @@ export async function fetchGoogle(config: ProviderConfig, kind: "gemini" | "veo"
         value: "View project spend",
         url: `https://aistudio.google.com/spend?project=${encodeURIComponent(auth.project)}`,
       });
-    if (kind === "veo") extras.push(extra("Billing unit", "video requests/seconds"));
+    // Only lines that change what the user does are kept on the card. The billing unit, an
+    // empty "no quota samples" line (the missing quota bar already says so) and a standing
+    // "may be delayed" note were dropped; the delay is explained once, in Settings.
     extras.push(
       ...modelUsage(matching, kind === "veo" ? "requests" : backend === "vertex" ? "tokens" : "output tokens"),
     );
     const quota = quotas.flatMap((q) => quotaWindows(q.limit.series, q.usage.series, kind, now.getTime(), q.name));
     const windows = [monthlyProgress(label, reportedTotal, config.monthlyUsageTarget), ...quota];
-    if (!quota.length) extras.push(extra("Provider quota", "No matching recent quota samples"));
     const failures = all.filter((m) => m.status !== 200);
     if (failures.length)
       extras.push(extra("Monitoring coverage", `${failures.length} metrics unavailable; no values inferred`));
@@ -236,7 +248,6 @@ export async function fetchGoogle(config: ProviderConfig, kind: "gemini" | "veo"
       plan: backend === "vertex" ? "Vertex AI" : "Gemini API",
       windows,
       extras,
-      message: "Provider usage and quota reports may be delayed.",
     });
   } catch (error) {
     return snap.error(
@@ -252,7 +263,7 @@ export function googleProvider(kind: "gemini" | "veo"): Provider {
     id: kind === "veo" ? "google-veo" : "google-gemini",
     name: kind === "veo" ? "Google Veo" : "Google Gemini",
     fetch: (config) => fetchGoogle(config, kind),
-    help: "Reads Google Cloud Monitoring using a service account with Monitoring Viewer. An inference API key alone cannot read historical usage or quotas.",
+    help: "Reads Google Cloud Monitoring using a service account with Monitoring Viewer. An inference API key alone cannot read historical usage or quotas. Google publishes these figures with a delay, so the latest requests may not show yet.",
     needsConfig: [
       {
         key: "serviceAccountKey",

@@ -70,8 +70,11 @@ it("reads Vertex Veo request counts without generating videos", async () => {
   expect(result.windows[0]?.label).toContain("local target");
   expect(result.windows[0]?.percent).toBe(70);
   expect(result.windows[0]?.detail).toBe("7 / 10 · 3 left");
-  expect(result.extras.find((x) => x.label === "Billing unit")?.value).toContain("requests/seconds");
   expect(result.extras.find((x) => x.label === "veo-3.1")?.value).toBe("7 requests");
+  // Lines that never change what the user does stay off the card.
+  expect(result.extras.map((x) => x.label)).not.toContain("Billing unit");
+  expect(result.extras.map((x) => x.label)).not.toContain("Provider quota");
+  expect(result.message).toBeUndefined();
   expect(result.extras.find((x) => x.label === "Credit balance")?.url).toBe(
     "https://console.cloud.google.com/billing?project=test-project",
   );
@@ -109,4 +112,40 @@ it("collects all month token pages instead of silently undercounting", async () 
   expect(result.extras.find((x) => x.label === "Gemini API spend")?.url).toBe(
     "https://aistudio.google.com/spend?project=test-project",
   );
+});
+
+it.each([
+  [
+    "five models fold into the top two and one line for the rest",
+    { "gemini-a": 505248, "gemini-b": 14568, "gemini-c": 61, "gemini-d": 7, "gemini-e": 5 },
+    [
+      { label: "gemini-a", value: "505.2K output tokens" },
+      { label: "gemini-b", value: "14.6K output tokens" },
+      { label: "3 other models", value: "73 output tokens" },
+    ],
+  ],
+  [
+    "three models are all shown rather than folding one into 'other'",
+    { "gemini-a": 1200, "gemini-b": 30, "gemini-c": 4 },
+    [
+      { label: "gemini-a", value: "1.2K output tokens" },
+      { label: "gemini-b", value: "30 output tokens" },
+      { label: "gemini-c", value: "4 output tokens" },
+    ],
+  ],
+])("keeps the model breakdown to three compact lines: %s", async (_name, models, expected) => {
+  vi.mocked(fetch).mockImplementation(async (url) => {
+    const request = new URL(String(url));
+    if (!request.searchParams.get("filter")?.includes("generate_content_usage_output_token_count"))
+      return Response.json({});
+    return Response.json({
+      timeSeries: Object.entries(models).map(([model, n]) => ({
+        metric: { labels: { model } },
+        points: [{ value: { int64Value: String(n) }, interval: { endTime: new Date().toISOString() } }],
+      })),
+    });
+  });
+  const result = await fetchGoogle({}, "gemini");
+  const lines = result.extras.filter((x) => x.label.startsWith("gemini-") || x.label.includes(" other "));
+  expect(lines).toEqual(expected);
 });
