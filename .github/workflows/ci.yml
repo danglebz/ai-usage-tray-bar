@@ -37,3 +37,24 @@ jobs:
       - run: pnpm run lint
       - run: pnpm run format:check
       - run: pnpm run test
+
+      # Starts the real app in demo mode and expects a screenshot back. Everything above
+      # runs without Electron, so only this step catches an upgrade that breaks at launch.
+      # Kept out of `pnpm verify`, which must not open windows. The app's own run is capped
+      # at 60 s; the step limit just keeps a hung runner from burning Windows minutes.
+      - id: smoke
+        run: pnpm run smoke
+        timeout-minutes: 5
+        env:
+          SMOKE_ARTIFACT_DIR: ${{ runner.temp }}/smoke
+
+      # When the check rejects the screenshot, keep what the app drew: a byte count alone
+      # does not say whether the panel was blank, half painted or just small. Seven days is
+      # plenty for a debugging aid. Gated on the smoke step so an earlier failure (lint, say)
+      # does not go looking for a screenshot that was never taken.
+      - if: failure() && steps.smoke.outcome == 'failure'
+        uses: actions/upload-artifact@v7
+        with:
+          name: smoke-screenshot
+          path: ${{ runner.temp }}/smoke
+          retention-days: 7

@@ -100,7 +100,8 @@ pnpm typecheck      # tsc, main process and renderer
 pnpm lint           # eslint
 pnpm format         # prettier --write
 pnpm test           # vitest run (pnpm test:watch for watch mode)
-pnpm verify         # all of the above, what CI runs
+pnpm verify         # all of the above; CI runs it, then pnpm smoke
+pnpm smoke          # launch the app on demo data and check it draws a panel (opens a window, so not part of verify)
 pnpm dist           # portable exe into dist/ (unsigned)
 pnpm icon           # regenerate assets/icon.ico from assets/icon.png
 pnpm screenshot     # re-render docs/screenshot.png from demo data
@@ -123,6 +124,7 @@ src/providers/_util.ts    fetch with timeout, JSON narrowing helpers, snapshot c
 src/providers/*.ts        one file per provider, each exporting a Provider
 scripts/make-icon.ts      builds assets/icon.ico
 scripts/screenshot.ts     renders docs/screenshot.png (the README image) from demo data
+scripts/smoke.ts          launch check for CI: runs the app on demo data and expects a PNG back
 ```
 
 ### Adding a provider

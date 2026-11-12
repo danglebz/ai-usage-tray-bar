@@ -9,6 +9,7 @@ pnpm install
 pnpm start          # run the app
 pnpm probe          # or just the providers, in the terminal
 pnpm verify         # type check + lint + format check + tests; CI runs the same
+pnpm smoke          # start the app on demo data and check it draws a panel; CI runs this too
 ```
 
 Node 22.18+ (24 recommended) and pnpm. `pnpm install` also downloads the Electron binary.

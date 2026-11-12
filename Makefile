@@ -30,8 +30,11 @@ probe: ## Probe providers in the terminal (ARGS="claude codex" for a subset)
 
 ## Checks
 
-verify: ## Type check + lint + format check + tests - what CI runs
+verify: ## Type check + lint + format check + tests - CI runs these, then smoke
 	$(PNPM) run verify
+
+smoke: ## Start the app on demo data and check it draws a panel (opens a window)
+	$(PNPM) run smoke
 
 typecheck: ## tsc, main process and renderer
 	$(PNPM) run typecheck
@@ -80,5 +83,5 @@ help: ## Show this help
 	@echo ""
 
 # dist/ and docs/ exist on disk; without .PHONY make would call these targets up to date.
-.PHONY: install start demo debug probe verify typecheck lint lint-fix format \
+.PHONY: install start demo debug probe verify smoke typecheck lint lint-fix format \
         format-check test test-watch dist icon screenshot clean clean-all help
