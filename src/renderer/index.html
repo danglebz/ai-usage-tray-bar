@@ -58,6 +58,9 @@
       </form>
     </main>
 
+    <!-- Outside both views: it must survive the list being rebuilt, and Settings being open. -->
+    <div id="announce" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
+
     <script src="renderer.js"></script>
   </body>
 </html>

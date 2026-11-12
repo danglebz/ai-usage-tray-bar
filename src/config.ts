@@ -14,6 +14,8 @@ export const DEFAULTS: AppConfig = {
   notifyAtPercent: 90,
   pinned: false,
   popupHeight: DEFAULT_POPUP_HEIGHT,
+  popupPosition: null,
+  cardOrder: [],
   providers: {
     claude: { enabled: true },
     codex: { enabled: true },
