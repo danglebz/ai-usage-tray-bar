@@ -1,14 +1,23 @@
-// Claude Code (claude.ai subscription: Pro / Max / Team).
+// Claude Code (claude.ai subscription: Pro / Max / Team / Ultra).
 //
 // Reads the OAuth token Claude Code already stores and asks the same endpoint that
-// `/usage` inside Claude Code asks. The endpoint is not documented; the field names
-// below were taken from the installed claude.exe (2.1.215) and a live 200 response.
+// `/usage` inside Claude Code asks. The endpoint is not documented. Where the fields
+// come from, last verified 2026-11-13:
+//   - A live 200 response on a Max 20x plan: `limits[]` rows (kind, group, percent,
+//     severity, resets_at, scope, is_active) next to the legacy five_hour / seven_day
+//     objects, and `rateLimitTier` ("default_claude_max_20x") in the credentials file.
+//   - The rate_limits contract documented inside the installed Claude Code 2.1.310. Rows
+//     are classified on `kind`, never on a label; the server's order, `severity` and
+//     `is_active` are used as sent; `limits` is [] when the server reported no meters and
+//     null when the body carried no rows at all (a server that predates them).
+// No Ultra (or other no-5-hour-limit) response was available to test against; those plans
+// are handled from the documented contract only. Tested live on Max 20x only.
 //
 // This provider NEVER refreshes the token. Refresh tokens may be single-use, and
 // refreshing here could log Claude Code itself out. When the token has expired we
 // show the local-log summary and ask the user to open Claude Code once.
 
-import type { Extra, Provider, Snapshot, UsageWindow } from "../types.ts";
+import type { Extra, Provider, Severity, Snapshot, UsageWindow } from "../types.ts";
 import { extra, fetchJson, home, isObject, num, prop, readJson, snap, str, usd, win } from "./_util.ts";
 import { summarize } from "./claude-local.ts";
 
@@ -19,9 +28,17 @@ const KIND_LABEL: Record<string, string> = {
   weekly_all: "Weekly (all models)",
 };
 
+const GROUP_LABEL: Record<string, string> = {
+  session: "Session",
+  weekly: "Weekly",
+};
+
+const NO_LIMITS_MESSAGE = "No usage limits reported for this plan.";
+
 interface Credentials {
   accessToken: string | null;
   subscriptionType: string | null;
+  rateLimitTier: string | null;
   expiresAt: number | null;
 }
 
@@ -31,8 +48,79 @@ function readCredentials(): Credentials | null {
   return {
     accessToken: str(oauth.accessToken),
     subscriptionType: str(oauth.subscriptionType),
+    rateLimitTier: str(oauth.rateLimitTier),
     expiresAt: num(oauth.expiresAt),
   };
+}
+
+/** "weekly_ultra" -> "Weekly ultra". */
+function humanize(s: string): string {
+  const t = s.replace(/_/g, " ").trim();
+  return t.charAt(0).toUpperCase() + t.slice(1);
+}
+
+/**
+ * Card-head plan name from the credentials: "max" + "default_claude_max_20x" -> "Max 20x";
+ * any other non-empty type has its first letter capitalised ("ultra" -> "Ultra"); null when
+ * Claude Code stored no type.
+ */
+export function planLabel(subscriptionType: string | null, rateLimitTier: string | null): string | null {
+  const type = subscriptionType?.trim();
+  if (!type) return null;
+  if (type.toLowerCase() === "max") {
+    const m = /max_(\d+)x$/.exec(rateLimitTier ?? "");
+    if (m) return `Max ${m[1]}x`;
+  }
+  return type.charAt(0).toUpperCase() + type.slice(1);
+}
+
+/** The server's own reading of a row, or null when it sent none we recognise. */
+function serverSeverity(v: unknown): Severity | null {
+  return v === "normal" || v === "warning" || v === "critical" ? v : null;
+}
+
+/** Label for one `limits[]` row. Classified on kind / group / scope, never on the server's text. */
+function limitLabel(row: Record<string, unknown>): string {
+  const kind = str(prop(row, "kind"));
+  if (kind && KIND_LABEL[kind]) return KIND_LABEL[kind];
+
+  const scope = prop(row, "scope");
+  const scoped = [prop(prop(scope, "model"), "display_name"), prop(prop(scope, "surface"), "display_name")]
+    .map(str)
+    .filter((n): n is string => !!n);
+  if (scoped.length) {
+    const group = str(prop(row, "group")) ?? kind?.split("_")[0];
+    const head = group ? (GROUP_LABEL[group] ?? humanize(group)) : "Limit";
+    return `${head} (${scoped.join(", ")})`;
+  }
+  return kind ? humanize(kind) : "Limit";
+}
+
+/**
+ * Turn the usage body into card windows. An array `limits` (even an empty one) is used
+ * verbatim, in the server's order, and the legacy keys are ignored. Only when `limits` is
+ * null or absent do we fall back to the older top-level five_hour / seven_day objects.
+ */
+export function windowsFrom(json: Record<string, unknown>): UsageWindow[] {
+  const out: UsageWindow[] = [];
+  if (Array.isArray(json.limits)) {
+    for (const row of json.limits) {
+      if (!isObject(row)) continue;
+      const w = win(limitLabel(row), row.percent, row.resets_at, { active: !!row.is_active });
+      out.push({ ...w, severity: serverSeverity(row.severity) ?? w.severity });
+    }
+    return out;
+  }
+  // Older shape: top-level five_hour / seven_day objects.
+  const legacy = (key: string, label: string): void => {
+    const w = json[key];
+    if (isObject(w)) out.push(win(label, w.utilization, w.resets_at));
+  };
+  legacy("five_hour", "5-hour session");
+  legacy("seven_day", "Weekly (all models)");
+  legacy("seven_day_opus", "Weekly (opus)");
+  legacy("seven_day_sonnet", "Weekly (sonnet)");
+  return out;
 }
 
 function fmtTokens(n: number): string {
@@ -51,39 +139,12 @@ function localExtras(): Extra[] {
   }
 }
 
-function windowsFrom(json: Record<string, unknown>): UsageWindow[] {
-  const out: UsageWindow[] = [];
-  if (Array.isArray(json.limits) && json.limits.length) {
-    for (const l of json.limits as unknown[]) {
-      const kind = str(prop(l, "kind"));
-      let label = kind ? KIND_LABEL[kind] : undefined;
-      if (!label && kind === "weekly_scoped") {
-        const model = str(prop(prop(prop(l, "scope"), "model"), "display_name"));
-        label = model ? `Weekly (${model})` : "Weekly (scoped)";
-      }
-      if (!label) label = kind ?? "Limit";
-      out.push(win(label, prop(l, "percent"), prop(l, "resets_at"), { active: !!prop(l, "is_active") }));
-    }
-    return out;
-  }
-  // Older shape: top-level five_hour / seven_day objects.
-  const legacy = (key: string, label: string): void => {
-    const w = json[key];
-    if (isObject(w)) out.push(win(label, w.utilization, w.resets_at));
-  };
-  legacy("five_hour", "5-hour session");
-  legacy("seven_day", "Weekly (all models)");
-  legacy("seven_day_opus", "Weekly (opus)");
-  legacy("seven_day_sonnet", "Weekly (sonnet)");
-  return out;
-}
-
 async function fetchUsage(): Promise<Snapshot> {
   const cred = readCredentials();
   if (!cred?.accessToken) {
     return snap.notLoggedIn("Claude Code is not logged in on this machine (no ~/.claude/.credentials.json).");
   }
-  const plan = cred.subscriptionType;
+  const plan = planLabel(cred.subscriptionType, cred.rateLimitTier);
   const expired = cred.expiresAt != null && cred.expiresAt < Date.now();
   if (expired) {
     return snap.expired("Access token expired. Open Claude Code once and it will refresh itself.", {
@@ -120,7 +181,13 @@ async function fetchUsage(): Promise<Snapshot> {
   }
   extras.push(...localExtras());
 
-  return snap.ok({ plan, windows: windowsFrom(res.json), extras });
+  // The server sent a meter list (not null) that yields no usable row, e.g. [] or [null]:
+  // this plan has no limits to show, so say so instead of leaving an empty card.
+  const windows = windowsFrom(res.json);
+  if (Array.isArray(res.json.limits) && windows.length === 0) {
+    return snap.ok({ plan, windows, message: NO_LIMITS_MESSAGE, extras });
+  }
+  return snap.ok({ plan, windows, extras });
 }
 
 const provider: Provider = {
