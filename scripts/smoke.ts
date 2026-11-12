@@ -5,6 +5,10 @@
 // Run with `pnpm smoke`, or `node scripts/smoke.ts <appDir>` to point it at another app
 // directory (used to prove that a broken app is caught). It is not part of `pnpm verify`: the
 // Definition-of-Done gate runs that, and it must not open windows.
+//
+// SMOKE_ARTIFACT_DIR=<dir>: when the check fails and a PNG exists, a copy is left in <dir>
+// (CI uploads it), so a bad screenshot can be looked at instead of guessed from its byte size.
+// Unset, nothing leaves the temp directory.
 
 import { spawnSync } from "node:child_process";
 import fs from "node:fs";
@@ -52,17 +56,33 @@ function smoke(png: string): string {
     throw new Error(`${png} is not a PNG (bad signature)`);
   if (bytes.length < MIN_PNG_BYTES)
     throw new Error(`${png} is only ${bytes.length} bytes (expected at least ${MIN_PNG_BYTES})`);
-  return `smoke ok: ${png} (${bytes.length} bytes)`;
+  return `smoke ok: ${bytes.length}-byte PNG written to ${png}, removed afterwards`;
+}
+
+/** Copies a failed run's PNG to SMOKE_ARTIFACT_DIR. Best effort: it must never hide the real failure. */
+function keepScreenshot(png: string): void {
+  const out = process.env.SMOKE_ARTIFACT_DIR;
+  if (!out || !fs.existsSync(png)) return;
+  try {
+    fs.mkdirSync(out, { recursive: true });
+    const kept = path.join(out, "panel.png");
+    fs.copyFileSync(png, kept);
+    console.log(`smoke: kept the screenshot at ${kept}`);
+  } catch (e) {
+    console.error(`smoke: could not keep the screenshot: ${e instanceof Error ? e.message : String(e)}`);
+  }
 }
 
 // A fresh directory per run, so a PNG left by an earlier run can never make this one pass, and
 // nothing is written into the repository.
 const dir = fs.mkdtempSync(path.join(os.tmpdir(), "ai-usage-smoke-"));
+const png = path.join(dir, "panel.png");
 try {
-  console.log(smoke(path.join(dir, "panel.png")));
+  console.log(smoke(png));
 } catch (e) {
   console.error(`smoke failed: ${e instanceof Error ? e.message : String(e)}`);
   process.exitCode = 1;
+  keepScreenshot(png);
 } finally {
   fs.rmSync(dir, { recursive: true, force: true, maxRetries: 3 });
 }
