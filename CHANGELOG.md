@@ -2,6 +2,44 @@
 
 All notable changes to this project are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses [Semantic Versioning](https://semver.org/). From 0.1.1 on, release-please writes the entries below from the commit subjects — see [Releasing](README.md#releasing) rather than editing this file.
 
+## [0.1.3](https://github.com/danglebz/ai-usage-tray-bar/compare/v0.1.2...v0.1.3) (2026-11-13)
+
+
+### Added
+
+* add a pin button that keeps the panel open ([2a9662e](https://github.com/danglebz/ai-usage-tray-bar/commit/2a9662e20a5a468c99b0b5f59b129f26ac87070f))
+* **claude-console:** report tokens and complete monthly spend ([db243f9](https://github.com/danglebz/ai-usage-tray-bar/commit/db243f927d09cb973d443818659998e05f77f334))
+* **claude:** show the meters the server reports, ready for plans without a 5-hour limit ([#28](https://github.com/danglebz/ai-usage-tray-bar/issues/28)) ([f785cfb](https://github.com/danglebz/ai-usage-tray-bar/commit/f785cfbfd479ca984861565de5a183ac3b03ffe1))
+* **content-automation:** read project token usage without database writes ([f599898](https://github.com/danglebz/ai-usage-tray-bar/commit/f599898a6ff5f8f85f1b22af81f71994b7866474))
+* **content-automation:** read Railway usage over private SSH ([5948302](https://github.com/danglebz/ai-usage-tray-bar/commit/5948302bb49f08093e50e25455e15a75fdf8608f))
+* **content-automation:** show project tokens and remaining credits in tray ([3956f7e](https://github.com/danglebz/ai-usage-tray-bar/commit/3956f7eb870fa347d631580cdebbcde6e85febb4))
+* **fal:** show account credits and monthly API spend ([685abf0](https://github.com/danglebz/ai-usage-tray-bar/commit/685abf0597aef3ff92c75d65e79d4f3d47b47a99))
+* **google:** add separate Gemini and Veo usage monitors ([49c561f](https://github.com/danglebz/ai-usage-tray-bar/commit/49c561fa8f6daf156b36f86363886e70a761f5b2))
+* **google:** keep the Google cards to the lines worth reading ([#25](https://github.com/danglebz/ai-usage-tray-bar/issues/25)) ([414c16e](https://github.com/danglebz/ai-usage-tray-bar/commit/414c16e79c9448585354eed6b59ce1f9fa36baa4))
+* **google:** link Gemini project spending ([77a85ca](https://github.com/danglebz/ai-usage-tray-bar/commit/77a85ca017f5664818fdefa6f8b8bd04ecc54df9))
+* **google:** show model usage and link billing balances ([2168f60](https://github.com/danglebz/ai-usage-tray-bar/commit/2168f60fdc5d3fa02fc08d4f37388751a16a7a26))
+* **panel:** drag the panel and its cards, and tidy Settings ([#26](https://github.com/danglebz/ai-usage-tray-bar/issues/26)) ([cf118b0](https://github.com/danglebz/ai-usage-tray-bar/commit/cf118b03622c540c28554964cf1026f390de9b12))
+* **providers:** add monthly usage target progress bars ([d1c6077](https://github.com/danglebz/ai-usage-tray-bar/commit/d1c6077e51200872ebeb08017f596a2f12b1acb3))
+* **tray:** allow vertical resizing and remember panel height ([0b3c7ab](https://github.com/danglebz/ai-usage-tray-bar/commit/0b3c7ab76ef3e267b51ec9a2a40203998587748f))
+* **tray:** display usage progress bars with local monthly targets ([4a9c5cd](https://github.com/danglebz/ai-usage-tray-bar/commit/4a9c5cd4b703c3ced2b88e73e995d3580ad75cd1))
+
+
+### Fixed
+
+* **claude-console:** distinguish outages from missing access ([8ec7959](https://github.com/danglebz/ai-usage-tray-bar/commit/8ec7959618d17fe8b1fed19f7c739e5380691fe9))
+* **claude-console:** explain organization-scoped key access ([348af7d](https://github.com/danglebz/ai-usage-tray-bar/commit/348af7dcbb9080bbbaeb41b9c26170959a4f3409))
+* **claude-console:** identify valid keys without report access ([2e9725d](https://github.com/danglebz/ai-usage-tray-bar/commit/2e9725d5635b883afd0c84f3d6d8626e3b7f2e6f))
+* **google:** label quota windows and prefer project credentials ([abbe3d6](https://github.com/danglebz/ai-usage-tray-bar/commit/abbe3d6733bececd746dd34da842803f3dfd4049))
+* **settings:** accept pasted provider keys without project env files ([4d8da93](https://github.com/danglebz/ai-usage-tray-bar/commit/4d8da93b20eb28829a6333646d86c650849c7810))
+
+
+### Internal
+
+* check commit messages with commitlint in a git hook ([e206822](https://github.com/danglebz/ai-usage-tray-bar/commit/e2068220f162f25cb4a67074ef2dd5574b6e77b9))
+* **deps-dev:** bump electron from 44.3.0 to 44.11.1 ([#24](https://github.com/danglebz/ai-usage-tray-bar/issues/24)) ([e246f66](https://github.com/danglebz/ai-usage-tray-bar/commit/e246f66eb99afb4c3c5890354d43e19c81f93a6d))
+* **deps-dev:** bump electron-builder from 26.15.3 to 26.18.0 ([#18](https://github.com/danglebz/ai-usage-tray-bar/issues/18)) ([90a221a](https://github.com/danglebz/ai-usage-tray-bar/commit/90a221ae5113b04f191c5fe48fb7e235ba87da80))
+* **deps-dev:** bump the dev-tooling group across 1 directory with 8 updates ([#16](https://github.com/danglebz/ai-usage-tray-bar/issues/16)) ([b9e9571](https://github.com/danglebz/ai-usage-tray-bar/commit/b9e95716123ee86f1c82778d03b6e610e3d0d872))
+
 ## [0.1.2](https://github.com/danglebz/ai-usage-tray-bar/compare/v0.1.1...v0.1.2) (2026-09-12)
 
 
